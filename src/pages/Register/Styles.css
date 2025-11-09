@@ -1,0 +1,31 @@
+.register-page {
+  height: 100vh;
+  display: flex;
+  gap: 15px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.register-form {
+  min-width: 300px;
+}
+.register-form-forgot {
+  float: right;
+}
+.register-form-button {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.register-masked-input {
+  width: 100%;
+  background-color: var(--ant-color-bg-container, #d9d9d9);
+  border: 1px solid var(--ant-color-border, #d9d9d9);
+  border-radius: 6px;
+  padding: 6px 11px;
+  font-size: 14px;
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+  transition: all 0.3s;
+  outline: none;
+}
