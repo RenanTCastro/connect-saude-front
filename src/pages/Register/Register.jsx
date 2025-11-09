@@ -1,7 +1,6 @@
 import { Form, Input, Button, Typography, message } from "antd";
 import { LockOutlined, UserOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
-import { login } from "../../helper/auth";
 import api from "../../services/api";
 
 const { Title } = Typography;
@@ -15,9 +14,8 @@ export default function Register() {
   const handleRegister = async values => {
     try {
       console.log(values)
-      const res = await api.post('/register', values);
-      login(res.data.token);
-      navigate("/inventory");
+      await api.post('/register', values);
+      navigate("/login");
     } catch (err) {
       console.log(err)
       messageApi.error("Aconteceu algum erro, tente novamente mais tarde!");
