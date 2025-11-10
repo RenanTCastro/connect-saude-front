@@ -36,13 +36,13 @@ export default function AppLayout() {
             },
             {
               key: "2",
-              icon: <ShoppingOutlined />,
-              label: <Link to="/inventory">Inventory</Link>,
+              icon: <UserOutlined />,
+              label: <Link to="/patient">Pacientes</Link>,
             },
             {
               key: "3",
-              icon: <UserOutlined />,
-              label: <Link to="/profile">Profile</Link>,
+              icon: <ShoppingOutlined />,
+              label: <Link to="/inventory">Estoque</Link>,
             },
             {
               key: "4",
