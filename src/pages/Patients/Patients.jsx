@@ -124,7 +124,7 @@ export default function Patients() {
           <Button
             type="primary"
             icon={<EyeOutlined />}
-            onClick={() => navigate(`/patients/${record.key}`)}
+            onClick={() => navigate(`/patient/${record.key}`)}
           >
             Ver mais
           </Button>
@@ -159,7 +159,7 @@ export default function Patients() {
             label="Nome completo"
             rules={[{ required: true, message: "Informe o nome completo!" }]}
           >
-            <Input placeholder="Nome completo" />
+            <Input placeholder="Nome completo" maxLength={200}/>
           </Form.Item>
 
           <Form.Item 
@@ -213,8 +213,15 @@ export default function Patients() {
           </div>
 
           <div style={{ display: "flex", gap: 12 }}>
-            <Form.Item name="zip_code" label="CEP" style={{ flex: "0.7" }}>
-              <Input placeholder="CEP" />
+            <Form.Item 
+                name="zip_code" 
+                label="CEP" 
+                rules={[
+                    { min: 8, message: "Digite um CEP válido."}
+                ]}
+                style={{ flex: "0.7" }}
+            >
+              <Input placeholder="CEP" maxLength={8}/>
             </Form.Item>
             <Form.Item name="street" label="Endereço" style={{ flex: 2 }}>
               <Input placeholder="Rua / Avenida" />
@@ -223,11 +230,11 @@ export default function Patients() {
 
           <div style={{ display: "flex", gap: 12 }}>
             <Form.Item name="neighborhood" label="Bairro" style={{ flex: 1 }}>
-              <Input placeholder="Bairro" />
+              <Input placeholder="Bairro" maxLength={200}/>
             </Form.Item>
 
             <Form.Item name="city" label="Cidade" style={{ flex: 1 }}>
-              <Input placeholder="Cidade" />
+              <Input placeholder="Cidade" maxLength={200}/>
             </Form.Item>
 
             <Form.Item name="state" label="UF" style={{ flex: "0.5" }}>

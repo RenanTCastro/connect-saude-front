@@ -6,6 +6,7 @@ import Inventory from "./pages/Inventory/Inventory";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import AppLayout from "./components/AppLayout/AppLayout";
 import Patients from "./pages/Patients/Patients";
+import Patient from "./pages/Patient/Patient";
 
 const router = createBrowserRouter([
     {
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
         children: [
             { path: "inventory", element: <Inventory />},
             { path: "patient", element: <Patients />},
+            { path: "patient/:id", element: <Patient />},
             { path: "home", element: <ProtectedRoute><>Página inicial</></ProtectedRoute>},
             { path: "*", element: <>ERRO</> },
         ],
