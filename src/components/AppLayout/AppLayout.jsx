@@ -42,10 +42,15 @@ export default function AppLayout() {
             {
               key: "3",
               icon: <ShoppingOutlined />,
-              label: <Link to="/inventory">Estoque</Link>,
+              label: <Link to="/sales">Vendas</Link>,
             },
             {
               key: "4",
+              icon: <ShoppingOutlined />,
+              label: <Link to="/inventory">Estoque</Link>,
+            },
+            {
+              key: "5",
               icon: <LogoutOutlined />,
               label: "Sair",
               onClick: handleLogout,
