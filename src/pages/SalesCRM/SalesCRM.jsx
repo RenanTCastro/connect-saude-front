@@ -6,6 +6,7 @@ import {
   Form, 
   Modal, 
   Input, 
+  InputNumber,
   Typography, 
   Dropdown, 
   Select, 
@@ -47,7 +48,7 @@ const headerStyles = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  marginBottom: 24,
+  marginBottom: 16,
   flexShrink: 0,
   paddingRight: 24
 };
@@ -116,7 +117,16 @@ const opportunityCardBodyStyles = {
 
 const opportunityTitleStyles = {
   fontSize: 14,
-  wordBreak: "break-word"
+  fontWeight: 500,
+  wordBreak: "break-word",
+  marginBottom: 4
+};
+
+const opportunityInfoStyles = {
+  fontSize: 12,
+  color: "#8c8c8c",
+  marginTop: 4,
+  lineHeight: 1.4
 };
 
 const addStageCardStyles = {
@@ -149,6 +159,19 @@ const menuButtonStyles = {
 const OpportunityCard = ({ opportunity, isDragging, draggedOpportunity, onDragStart, onDragEnd, onClick }) => {
   const isThisCardDragging = draggedOpportunity?.id === opportunity.id;
   
+  const formatCurrency = (value) => {
+    if (!value) return null;
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    return dayjs(dateString).format("DD/MM/YYYY");
+  };
+  
   return (
     <Card
       key={opportunity.id}
@@ -172,6 +195,24 @@ const OpportunityCard = ({ opportunity, isDragging, draggedOpportunity, onDragSt
       <div style={opportunityTitleStyles}>
         {opportunity.title}
       </div>
+      
+      {opportunity.patient_name && (
+        <div style={opportunityInfoStyles}>
+          {opportunity.patient_name}
+        </div>
+      )}
+      
+      {(opportunity.created_at || opportunity.estimated_value) && (
+        <div style={opportunityInfoStyles}>
+          {opportunity.created_at && formatDate(opportunity.created_at)}
+          {opportunity.created_at && opportunity.estimated_value && " - "}
+          {opportunity.estimated_value && (
+            <span style={opportunityInfoStyles}>
+              {formatCurrency(opportunity.estimated_value)}
+            </span>
+          )}
+        </div>
+      )}
     </Card>
   );
 };
@@ -429,6 +470,7 @@ const CreateOpportunityModal = ({
   loading,
   form,
   labels,
+  patients,
   onOk,
   onCancel,
   onCreateLabelClick,
@@ -465,6 +507,48 @@ const CreateOpportunityModal = ({
             placeholder="Descrição"
             showCount
           />
+        </Form.Item>
+
+        <Form.Item
+          name="estimated_value"
+          label="Valor Estimado"
+        >
+          <InputNumber
+            style={{ width: "100%" }}
+            placeholder="Valor estimado"
+            min={0}
+            step={10}
+            precision={2}
+            formatter={(value) => {
+              if (!value) return '';
+              const numValue = typeof value === 'string' ? parseFloat(value) : value;
+              return `R$ ${numValue.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+            }}
+            parser={(value) => {
+              if (!value) return '';
+              return value.replace(/R\$\s?|,/g, '');
+            }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="patient_id"
+          label="Paciente"
+        >
+          <Select
+            placeholder="Selecione um paciente (opcional)"
+            allowClear
+            showSearch
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+          >
+            {patients.map((patient) => (
+              <Option key={patient.id} value={patient.id} label={patient.full_name}>
+                {patient.full_name} {patient.cpf ? `- ${patient.cpf}` : ""}
+              </Option>
+            ))}
+          </Select>
         </Form.Item>
 
         <Form.Item
@@ -519,6 +603,7 @@ const OpportunityDetailsModal = ({
   loading,
   opportunity,
   labels,
+  patients,
   notes,
   form,
   noteForm,
@@ -579,6 +664,48 @@ const OpportunityDetailsModal = ({
                 placeholder="Descrição"
                 showCount
               />
+            </Form.Item>
+
+            <Form.Item
+              name="estimated_value"
+              label="Valor Estimado"
+            >
+              <InputNumber
+                style={{ width: "100%" }}
+                placeholder="Valor estimado"
+                min={0}
+                step={0.01}
+                precision={2}
+                formatter={(value) => {
+                  if (!value) return '';
+                  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+                  return `R$ ${numValue.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+                }}
+                parser={(value) => {
+                  if (!value) return '';
+                  return value.replace(/R\$\s?|,/g, '');
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="patient_id"
+              label="Paciente"
+            >
+              <Select
+                placeholder="Selecione um paciente (opcional)"
+                allowClear
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+                }
+              >
+                {patients.map((patient) => (
+                  <Option key={patient.id} value={patient.id} label={patient.full_name}>
+                    {patient.full_name} {patient.cpf ? `- ${patient.cpf}` : ""}
+                  </Option>
+                ))}
+              </Select>
             </Form.Item>
 
             <Form.Item
@@ -709,6 +836,7 @@ export default function SalesCRM() {
   const [stages, setStages] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [labels, setLabels] = useState([]);
+  const [patients, setPatients] = useState([]);
 
   // Forms
   const [messageApi, contextHolder] = message.useMessage();
@@ -750,6 +878,15 @@ export default function SalesCRM() {
         params: { is_active: true }
       });
       setLabels(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  const fetchPatients = useCallback(async () => {
+    try {
+      const res = await api.get("/patients");
+      setPatients(res.data);
     } catch (err) {
       console.error(err);
     }
@@ -886,7 +1023,8 @@ export default function SalesCRM() {
         title: values.title,
         description: values.description || null,
         stage_id: firstStage.id,
-        patient_id: null,
+        patient_id: values.patient_id || null,
+        estimated_value: values.estimated_value || null,
         label: values.label || null,
       };
       
@@ -945,6 +1083,8 @@ export default function SalesCRM() {
       opportunityDetailsForm.setFieldsValue({
         title: opportunityRes.data.title,
         description: opportunityRes.data.description,
+        patient_id: opportunityRes.data.patient_id || null,
+        estimated_value: opportunityRes.data.estimated_value || null,
         label: opportunityRes.data.label
       });
       
@@ -965,6 +1105,8 @@ export default function SalesCRM() {
       await api.put(`/sales/opportunities/${selectedOpportunityDetails.id}`, {
         title: values.title,
         description: values.description,
+        patient_id: values.patient_id || null,
+        estimated_value: values.estimated_value || null,
         label: values.label || null,
       });
       
@@ -1084,6 +1226,16 @@ export default function SalesCRM() {
       
       messageApi.success("Oportunidade movida com sucesso!");
       await fetchOpportunities();
+      
+      // Se o modal de detalhes estiver aberto para esta oportunidade, recarregar as notas
+      if (isOpportunityDetailsModalOpen && selectedOpportunityDetails?.id === draggedOpportunity.id) {
+        try {
+          const notesRes = await api.get(`/sales/opportunities/${draggedOpportunity.id}/notes`);
+          setOpportunityNotes(notesRes.data);
+        } catch (err) {
+          console.error("Erro ao recarregar notas:", err);
+        }
+      }
     } catch (err) {
       console.error(err);
       messageApi.error(err.response?.data?.error || "Erro ao mover oportunidade!");
@@ -1104,7 +1256,8 @@ export default function SalesCRM() {
     fetchStages();
     fetchOpportunities();
     fetchLabels();
-  }, [fetchStages, fetchOpportunities, fetchLabels]);
+    fetchPatients();
+  }, [fetchStages, fetchOpportunities, fetchLabels, fetchPatients]);
 
   // Handlers de modais
   const handleCloseCreateModal = () => {
@@ -1158,14 +1311,17 @@ export default function SalesCRM() {
     <div style={containerStyles}>
       {contextHolder}
 
-      <div style={headerStyles}>
-        <Title level={3} style={{ margin: 0 }}>Vendas</Title>
-        <Button 
-          type="primary" 
-          onClick={handleOpenCreateOpportunityModal}
-        >
-          + Adicionar Oportunidade
-        </Button>
+      <div>
+        <Title level={3}>Vendas</Title>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+          <div></div>
+          <Button
+            type="primary"
+            onClick={handleOpenCreateOpportunityModal}
+          >
+            + Adicionar Oportunidade
+          </Button>
+        </div>
       </div>
 
       <div style={kanbanBoardStyles}>
@@ -1235,6 +1391,7 @@ export default function SalesCRM() {
         loading={loading}
         form={opportunityForm}
         labels={labels}
+        patients={patients}
         onOk={handleCreateOpportunity}
         onCancel={handleCloseCreateOpportunityModal}
         onCreateLabelClick={handleOpenCreateLabelModal}
@@ -1261,6 +1418,7 @@ export default function SalesCRM() {
         loading={loading}
         opportunity={selectedOpportunityDetails}
         labels={labels}
+        patients={patients}
         stages={stages}
         notes={opportunityNotes}
         form={opportunityDetailsForm}
