@@ -1,8 +1,10 @@
 import { Layout, Menu } from "antd";
 import {
   HomeOutlined,
+  CalendarOutlined,
+  TeamOutlined,
   ShoppingOutlined,
-  UserOutlined,
+  InboxOutlined,
   LogoutOutlined,
 } from "@ant-design/icons";
 import { Link, Outlet, useNavigate } from "react-router-dom";
@@ -36,21 +38,26 @@ export default function AppLayout() {
             },
             {
               key: "2",
-              icon: <UserOutlined />,
-              label: <Link to="/patient">Pacientes</Link>,
+              icon: <CalendarOutlined />,
+              label: <Link to="/appointment">Agenda</Link>,
             },
             {
               key: "3",
-              icon: <ShoppingOutlined />,
-              label: <Link to="/sales">Vendas</Link>,
+              icon: <TeamOutlined />,
+              label: <Link to="/patient">Pacientes</Link>,
             },
             {
               key: "4",
               icon: <ShoppingOutlined />,
-              label: <Link to="/inventory">Estoque</Link>,
+              label: <Link to="/sales">Vendas</Link>,
             },
             {
               key: "5",
+              icon: <InboxOutlined />,
+              label: <Link to="/inventory">Estoque</Link>,
+            },
+            {
+              key: "6",
               icon: <LogoutOutlined />,
               label: "Sair",
               onClick: handleLogout,

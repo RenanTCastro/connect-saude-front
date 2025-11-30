@@ -8,6 +8,7 @@ import AppLayout from "./components/AppLayout/AppLayout";
 import Patients from "./pages/Patients/Patients";
 import Patient from "./pages/Patient/Patient";
 import SalesCRM from "./pages/SalesCRM/SalesCRM";
+import Appointment from "./pages/Appointment/Appointment";
 
 const router = createBrowserRouter([
     {
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
             { path: "patient", element: <Patients />},
             { path: "patient/:id", element: <Patient />},
             { path: "sales", element: <SalesCRM />},
+            { path: "appointment", element: <Appointment />},
             { path: "home", element: <ProtectedRoute><>Página inicial</></ProtectedRoute>},
             { path: "*", element: <>ERRO</> },
         ],
