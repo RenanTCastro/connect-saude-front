@@ -49,21 +49,16 @@ export default function PatientDetails() {
         setInvoices([]);
       }
 
-      // Dados fake de consultas
-      setAppointments([
-        {
-          id: 1,
-          date: "2025-07-30T18:00:00Z",
-          status: "Finalizada",
-          professional_name: "Isadora Luísa",
-        },
-        {
-          id: 2,
-          date: "2025-08-12T10:00:00Z",
-          status: "Agendada",
-          professional_name: "Dra. Marina Alves",
-        },
-      ]);
+      // Buscar consultas do paciente
+      try {
+        const appointmentsRes = await api.get(`/appointments`, {
+          params: { patient_id: id, type: "consulta" }
+        });
+        setAppointments(appointmentsRes.data);
+      } catch (appointmentErr) {
+        console.error("Erro ao carregar consultas:", appointmentErr);
+        setAppointments([]);
+      }
     } catch (err) {
       console.error(err);
       messageApi.error("Erro ao carregar dados do paciente.");
@@ -162,13 +157,38 @@ export default function PatientDetails() {
             ) : (
               appointments.map((appt) => (
                 <div key={appt.id} style={{ marginBottom: 16 }}>
-                  <Text>{dayjs(appt.date).format("DD/MM/YYYY [às] HH:mm")}</Text>
-                  <br />
-                  <Text strong>{appt.status}</Text>
-                  <Button type="link" style={{ paddingLeft: 8 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                    <div style={{ flex: 1 }}>
+                      <Text strong style={{ display: "block", marginBottom: 4 }}>
+                        {appt.title || "Consulta"}
+                      </Text>
+                      <Text style={{ display: "block", marginBottom: 4 }}>
+                        {dayjs(appt.start_datetime).format("DD/MM/YYYY [às] HH:mm")}
+                      </Text>
+                      {appt.description && (
+                        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
+                          {appt.description}
+                        </Text>
+                      )}
+                    </div>
+                    <Text 
+                      type={appt.status === "completed" ? "success" : appt.status === "cancelled" ? "danger" : "default"}
+                      style={{ fontSize: 12 }}
+                    >
+                      {appt.status === "scheduled" ? "Agendada" : 
+                       appt.status === "completed" ? "Finalizada" : 
+                       appt.status === "cancelled" ? "Cancelada" : 
+                       appt.status || "Agendada"}
+                    </Text>
+                  </div>
+                  <Button 
+                    type="link" 
+                    style={{ padding: 0 }}
+                    onClick={() => navigate(`/appointment`)}
+                  >
                     Ver na agenda
                   </Button>
-                  <Divider />
+                  {appt !== appointments[appointments.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
                 </div>
               ))
             )}
