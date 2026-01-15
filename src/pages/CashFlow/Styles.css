@@ -1,0 +1,12 @@
+.cashflow-container {
+  width: 100%;
+}
+
+.overdue-row {
+  background-color: #fff1f0 !important;
+}
+
+.overdue-row:hover {
+  background-color: #ffe7e5 !important;
+}
+

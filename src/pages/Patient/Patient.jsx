@@ -27,6 +27,7 @@ export default function PatientDetails() {
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -38,6 +39,15 @@ export default function PatientDetails() {
       setLoading(true);
       const res = await api.get(`/patients/${id}`);
       setPatient(res.data);
+
+      // Buscar faturas do paciente
+      try {
+        const invoicesRes = await api.get(`/patients/${id}/invoices`);
+        setInvoices(invoicesRes.data);
+      } catch (invoiceErr) {
+        console.error("Erro ao carregar faturas:", invoiceErr);
+        setInvoices([]);
+      }
 
       // Dados fake de consultas
       setAppointments([
@@ -168,7 +178,58 @@ export default function PatientDetails() {
 
       <Divider />
       <Card title="Faturas" style={{ marginTop: 12, minHeight: 120 }}>
-        <Text type="secondary">Espaço reservado para faturas (em desenvolvimento)</Text>
+        {invoices.length === 0 ? (
+          <Text type="secondary">Nenhuma fatura registrada.</Text>
+        ) : (
+          <div style={{ maxHeight: 400, overflowY: "auto" }}>
+            {invoices.map((invoice) => (
+              <div key={invoice.id} style={{ marginBottom: 16, padding: 12, border: "1px solid #f0f0f0", borderRadius: 4 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <Text strong style={{ display: "block", marginBottom: 4 }}>{invoice.title}</Text>
+                    {invoice.description && (
+                      <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
+                        {invoice.description}
+                      </Text>
+                    )}
+                    {invoice.installment.total > 1 && (
+                      <Text type="secondary" style={{ fontSize: 12 }}>
+                        Parcela {invoice.installment.current} de {invoice.installment.total}
+                      </Text>
+                    )}
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <Text strong style={{ fontSize: 16, color: invoice.isPaid ? "#52c41a" : "#ff4d4f", display: "block" }}>
+                      R$ {invoice.amount.toFixed(2).replace(".", ",")}
+                    </Text>
+                    <Text 
+                      type={invoice.isPaid ? "success" : "danger"} 
+                      style={{ fontSize: 12, display: "block", marginTop: 4 }}
+                    >
+                      {invoice.isPaid ? "Paga" : "Pendente"}
+                    </Text>
+                  </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8c8c8c" }}>
+                  <Text>
+                    <Text strong>Vencimento:</Text> {dayjs(invoice.dueDate).format("DD/MM/YYYY")}
+                  </Text>
+                  {invoice.paymentDate && (
+                    <Text>
+                      <Text strong>Pagamento:</Text> {dayjs(invoice.paymentDate).format("DD/MM/YYYY")}
+                    </Text>
+                  )}
+                  {invoice.paymentType && (
+                    <Text>
+                      <Text strong>Forma:</Text> {invoice.paymentType}
+                    </Text>
+                  )}
+                </div>
+                {invoice !== invoices[invoices.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
 
       <Modal

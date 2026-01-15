@@ -9,6 +9,7 @@ import Patients from "./pages/Patients/Patients";
 import Patient from "./pages/Patient/Patient";
 import SalesCRM from "./pages/SalesCRM/SalesCRM";
 import Appointment from "./pages/Appointment/Appointment";
+import CashFlow from "./pages/CashFlow/CashFlow";
 
 const router = createBrowserRouter([
     {
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
             { path: "patient/:id", element: <Patient />},
             { path: "sales", element: <SalesCRM />},
             { path: "appointment", element: <Appointment />},
+            { path: "cashflow", element: <CashFlow />},
             { path: "home", element: <ProtectedRoute><>Página inicial</></ProtectedRoute>},
             { path: "*", element: <>ERRO</> },
         ],

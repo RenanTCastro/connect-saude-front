@@ -5,6 +5,7 @@ import {
   TeamOutlined,
   ShoppingOutlined,
   InboxOutlined,
+  DollarOutlined,
   LogoutOutlined,
 } from "@ant-design/icons";
 import { Link, Outlet, useNavigate } from "react-router-dom";
@@ -58,6 +59,11 @@ export default function AppLayout() {
             },
             {
               key: "6",
+              icon: <DollarOutlined />,
+              label: <Link to="/cashflow">Fluxo de Caixa</Link>,
+            },
+            {
+              key: "7",
               icon: <LogoutOutlined />,
               label: "Sair",
               onClick: handleLogout,
