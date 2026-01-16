@@ -10,6 +10,7 @@ import {
 } from "@ant-design/icons";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { logout } from "../../helper/auth";
+import logo from "../../assets/logo.svg";
 
 import "./Styles.css";
 
@@ -26,7 +27,9 @@ export default function AppLayout() {
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider collapsible>
-        <div className="logo">Connect <br/> Saúde</div>
+        <div className="logo">
+          <img src={logo} alt="Connect Saúde"/>
+        </div>
         <Menu
           theme="dark"
           mode="inline"
@@ -35,7 +38,7 @@ export default function AppLayout() {
             {
               key: "1",
               icon: <HomeOutlined />,
-              label: <Link to="/home">Home</Link>,
+              label: <Link to="/">Home</Link>,
             },
             {
               key: "2",
@@ -59,11 +62,6 @@ export default function AppLayout() {
             },
             {
               key: "6",
-              icon: <DollarOutlined />,
-              label: <Link to="/cashflow">Fluxo de Caixa</Link>,
-            },
-            {
-              key: "7",
               icon: <LogoutOutlined />,
               label: "Sair",
               onClick: handleLogout,

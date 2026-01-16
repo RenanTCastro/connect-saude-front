@@ -631,7 +631,7 @@ export default function CashFlow() {
   return (
     <div className="cashflow-container">
       {contextHolder}
-      <Title level={2}>Fluxo de Caixa</Title>
+      <Title level={3}>Fluxo de Caixa</Title>
 
       <Tabs
         activeKey={activeTab}
