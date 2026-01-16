@@ -7,6 +7,7 @@ import {
   InboxOutlined,
   DollarOutlined,
   LogoutOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { logout } from "../../helper/auth";
@@ -62,6 +63,11 @@ export default function AppLayout() {
             },
             {
               key: "6",
+              icon: <SettingOutlined />,
+              label: <Link to="/settings">Configurações</Link>,
+            },
+            {
+              key: "7",
               icon: <LogoutOutlined />,
               label: "Sair",
               onClick: handleLogout,

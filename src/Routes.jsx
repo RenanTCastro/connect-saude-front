@@ -10,6 +10,7 @@ import Patient from "./pages/Patient/Patient";
 import SalesCRM from "./pages/SalesCRM/SalesCRM";
 import Appointment from "./pages/Appointment/Appointment";
 import CashFlow from "./pages/CashFlow/CashFlow";
+import Settings from "./pages/Settings/Settings";
 
 const router = createBrowserRouter([
     {
@@ -30,6 +31,7 @@ const router = createBrowserRouter([
             { path: "patient/:id", element: <ProtectedRoute><Patient /></ProtectedRoute>},
             { path: "sales", element: <ProtectedRoute><SalesCRM /></ProtectedRoute>},
             { path: "appointment", element: <ProtectedRoute><Appointment /></ProtectedRoute>},
+            { path: "settings", element: <ProtectedRoute><Settings /></ProtectedRoute>},
             { path: "*", element: <ProtectedRoute><>Página não encontrada</></ProtectedRoute> },
         ],
     },
