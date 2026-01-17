@@ -400,6 +400,7 @@ export default function CashFlow() {
           icon={<CheckCircleOutlined />}
           onClick={() => handleMarkAsPaid(record.id)}
           size="small"
+          className="mark-paid-button"
         >
           Marcar como Paga
         </Button>
@@ -420,7 +421,7 @@ export default function CashFlow() {
                 value={dateRange}
                 onChange={setDateRange}
                 format="DD/MM/YYYY"
-                style={{ width: 300 }}
+                style={{ width: "100%", maxWidth: 300 }}
               />
             </Space>
           </div>
@@ -486,10 +487,11 @@ export default function CashFlow() {
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
+                  flexDirection: "column",
+                  gap: 12,
                   marginBottom: 16,
                 }}
+                className="section-header"
               >
                 <Title level={4} style={{ margin: 0 }}>
                   Receitas
@@ -498,27 +500,33 @@ export default function CashFlow() {
                   type="primary"
                   icon={<PlusOutlined />}
                   onClick={() => setIsIncomeModalOpen(true)}
+                  block
+                  className="mobile-button"
                 >
                   Nova Receita
                 </Button>
               </div>
-              <Table
-                columns={incomeColumns}
-                dataSource={incomes}
-                loading={loading}
-                pagination={{ pageSize: 10 }}
-                rowKey="id"
-              />
+              <div className="table-wrapper">
+                <Table
+                  columns={incomeColumns}
+                  dataSource={incomes}
+                  loading={loading}
+                  pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
+                  rowKey="id"
+                  scroll={{ x: true }}
+                />
+              </div>
             </div>
 
             <div>
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
+                  flexDirection: "column",
+                  gap: 12,
                   marginBottom: 16,
                 }}
+                className="section-header"
               >
                 <Title level={4} style={{ margin: 0 }}>
                   Despesas
@@ -528,17 +536,22 @@ export default function CashFlow() {
                   danger
                   icon={<PlusOutlined />}
                   onClick={() => setIsExpenseModalOpen(true)}
+                  block
+                  className="mobile-button"
                 >
                   Nova Despesa
                 </Button>
               </div>
-              <Table
-                columns={expenseColumns}
-                dataSource={expenses}
-                loading={loading}
-                pagination={{ pageSize: 10 }}
-                rowKey="id"
-              />
+              <div className="table-wrapper">
+                <Table
+                  columns={expenseColumns}
+                  dataSource={expenses}
+                  loading={loading}
+                  pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
+                  rowKey="id"
+                  scroll={{ x: true }}
+                />
+              </div>
             </div>
           </Space>
         </div>
@@ -611,18 +624,21 @@ export default function CashFlow() {
           <Title level={4} style={{ marginBottom: 16 }}>
             Parcelas Pendentes
           </Title>
-          <Table
-            columns={receivableColumns}
-            dataSource={pendingInstallments}
-            loading={loading}
-            pagination={{ pageSize: 10 }}
-            rowKey="id"
-            rowClassName={(record) =>
-              dayjs(record.dueDate).isBefore(dayjs(), "day")
-                ? "overdue-row"
-                : ""
-            }
-          />
+          <div className="table-wrapper">
+            <Table
+              columns={receivableColumns}
+              dataSource={pendingInstallments}
+              loading={loading}
+              pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
+              rowKey="id"
+              scroll={{ x: true }}
+              rowClassName={(record) =>
+                dayjs(record.dueDate).isBefore(dayjs(), "day")
+                  ? "overdue-row"
+                  : ""
+              }
+            />
+          </div>
         </div>
       ),
     },
@@ -652,7 +668,8 @@ export default function CashFlow() {
         }}
         okText="Criar"
         cancelText="Cancelar"
-        width={600}
+        width="90%"
+        style={{ maxWidth: 600 }}
       >
         <Form
           form={incomeForm}
@@ -814,7 +831,8 @@ export default function CashFlow() {
         }}
         okText="Criar"
         cancelText="Cancelar"
-        width={600}
+        width="90%"
+        style={{ maxWidth: 600 }}
       >
         <Form
           form={expenseForm}
