@@ -110,15 +110,23 @@ export default function InventoryTable() {
               setSelectedItem(record);
               form.setFieldsValue({ name: record.name, quantity: record.quantity });
               setIsUpdateModalOpen(true);
-            }}>
-            Editar
+            }}
+            className="action-button"
+          >
+            <span className="button-text">Editar</span>
           </Button>
 
-          <Button type="primary" danger icon={<DeleteOutlined />} onClick={() => {
-            setIsDeleteModalOpen(true)
-            setSelectedItem(record);
-          }}>
-            Excluir
+          <Button 
+            type="primary" 
+            danger 
+            icon={<DeleteOutlined />} 
+            onClick={() => {
+              setIsDeleteModalOpen(true)
+              setSelectedItem(record);
+            }}
+            className="action-button"
+          >
+            <span className="button-text">Excluir</span>
           </Button>
         </Space>
       ),
@@ -177,13 +185,14 @@ export default function InventoryTable() {
 
       <div>
         <Title level={3}>Estoque</Title>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+        <div className="inventory-header" style={{ display: "flex", justifyContent: "space-between", marginBottom: 16, gap: 12 }}>
           <Input.Search
             placeholder="Buscar produto..."
             allowClear
             enterButton="Buscar"
             onSearch={(value) => fetchInventory(value)}
-            style={{ width: 300 }}
+            style={{ width: 300, maxWidth: "100%", flex: 1 }}
+            className="search-input"
           />
 
           <Button
@@ -193,17 +202,21 @@ export default function InventoryTable() {
               setSelectedItem(null);
               setIsUpdateModalOpen(true);
             }}
+            className="add-button"
           >
             + Adicionar Produto
           </Button>
         </div>
       </div>
-      <Table
-        dataSource={data}
-        columns={columns}
-        loading={loading}
-        pagination={false}
-      />
+      <div className="table-wrapper">
+        <Table
+          dataSource={data}
+          columns={columns}
+          loading={loading}
+          pagination={false}
+          scroll={{ x: true }}
+        />
+      </div>
     </div>
   );
 }
