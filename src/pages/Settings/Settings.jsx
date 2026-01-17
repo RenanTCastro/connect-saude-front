@@ -93,8 +93,15 @@ export default function Settings() {
   const handleConfirmCancel = async () => {
     try {
       setProcessing(true);
-      await api.post("/subscription/cancel");
-      messageApi.success("Assinatura cancelada com sucesso. Você terá acesso até o final do período atual.");
+      const res = await api.post("/subscription/cancel");
+      const isTrialing = subscriptionStatus?.status === "trialing";
+      
+      if (isTrialing) {
+        messageApi.success("Renovação automática cancelada. Seu período de teste não será renovado.");
+      } else {
+        messageApi.success(res.data.message || "Assinatura cancelada com sucesso. Você terá acesso até o final do período atual.");
+      }
+      
       setIsCancelModalOpen(false);
       
       // Atualizar status após alguns segundos
@@ -134,6 +141,7 @@ export default function Settings() {
   const getStatusTag = (status) => {
     const statusConfig = {
       active: { color: "success", text: "Ativa", icon: <CheckCircleOutlined /> },
+      trialing: { color: "processing", text: "Período de Teste", icon: <CheckCircleOutlined /> },
       inactive: { color: "default", text: "Inativa", icon: <CloseCircleOutlined /> },
       canceled: { color: "error", text: "Cancelada", icon: <CloseCircleOutlined /> },
       past_due: { color: "warning", text: "Vencida", icon: <CloseCircleOutlined /> },
@@ -168,7 +176,7 @@ export default function Settings() {
       {contextHolder}
       
       <Modal
-        title="Cancelar Assinatura"
+        title={subscriptionStatus?.status === "trialing" ? "Cancelar Renovação Automática" : "Cancelar Assinatura"}
         open={isCancelModalOpen}
         onOk={handleConfirmCancel}
         onCancel={handleCancelModal}
@@ -178,11 +186,23 @@ export default function Settings() {
         confirmLoading={processing}
       >
         <div>
-          <p>Tem certeza que deseja cancelar sua assinatura?</p>
-          <p style={{ marginTop: "8px", color: "#666" }}>
-            Sua assinatura será cancelada ao final do período atual ({formatDate(subscriptionStatus?.endDate)}).
-            Você continuará tendo acesso até esta data.
-          </p>
+          {subscriptionStatus?.status === "trialing" ? (
+            <>
+              <p>Tem certeza que deseja cancelar a renovação automática?</p>
+              <p style={{ marginTop: "8px", color: "#666" }}>
+                Seu período de teste gratuito expira em <strong>{formatDate(subscriptionStatus?.endDate)}</strong> e não será renovado automaticamente.
+                Você continuará tendo acesso completo até essa data.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>Tem certeza que deseja cancelar sua assinatura?</p>
+              <p style={{ marginTop: "8px", color: "#666" }}>
+                Sua assinatura será cancelada ao final do período atual ({formatDate(subscriptionStatus?.endDate)}).
+                Você continuará tendo acesso até esta data.
+              </p>
+            </>
+          )}
         </div>
       </Modal>
 
@@ -206,9 +226,25 @@ export default function Settings() {
         }
         style={{ marginBottom: "24px" }}
       >
-        {subscriptionStatus?.hasSubscription && subscriptionStatus?.status === "active" ? (
+        {subscriptionStatus?.hasSubscription && (subscriptionStatus?.status === "active" || subscriptionStatus?.status === "trialing") ? (
           <>
-            {subscriptionStatus?.cancelAtPeriodEnd ? (
+            {subscriptionStatus?.status === "trialing" && !subscriptionStatus?.cancelAtPeriodEnd ? (
+              <Alert
+                message="Período de teste ativo"
+                description={`Você está no período de teste gratuito de 7 dias. Seu teste expira em ${formatDate(subscriptionStatus.endDate)}. Após essa data, você será cobrado automaticamente.`}
+                type="info"
+                showIcon
+                style={{ marginBottom: "24px" }}
+              />
+            ) : subscriptionStatus?.status === "trialing" && subscriptionStatus?.cancelAtPeriodEnd ? (
+              <Alert
+                message="Período de teste ativo"
+                description={`Você está no período de teste gratuito de 7 dias. Seu teste expira em ${formatDate(subscriptionStatus.endDate)} e não será renovado. Você continuará tendo acesso até essa data.`}
+                type="info"
+                showIcon
+                style={{ marginBottom: "24px" }}
+              />
+            ) : subscriptionStatus?.cancelAtPeriodEnd ? (
               <Alert
                 message="Assinatura será cancelada"
                 description={`Sua assinatura está ativa, mas será cancelada em ${formatDate(subscriptionStatus.endDate)}. Você pode reativar antes desta data.`}
@@ -240,7 +276,13 @@ export default function Settings() {
               </div>
 
               <div>
-                <Text strong>{subscriptionStatus?.cancelAtPeriodEnd ? "Data de expiração: " : "Próxima renovação: "}</Text>
+                <Text strong>
+                  {subscriptionStatus?.status === "trialing" 
+                    ? "Data de expiração do teste: " 
+                    : subscriptionStatus?.cancelAtPeriodEnd 
+                    ? "Data de expiração: " 
+                    : "Próxima renovação: "}
+                </Text>
                 <Text>{formatDate(subscriptionStatus.endDate)}</Text>
               </div>
 
@@ -265,10 +307,12 @@ export default function Settings() {
                     loading={processing}
                     block
                   >
-                    Reativar Assinatura
+                    {subscriptionStatus?.status === "trialing" ? "Ativar Renovação Automática" : "Reativar Assinatura"}
                   </Button>
                   <Paragraph type="secondary" style={{ textAlign: "center", marginTop: "8px", fontSize: "12px" }}>
-                    Reative sua assinatura para continuar usando após {formatDate(subscriptionStatus?.endDate)}.
+                    {subscriptionStatus?.status === "trialing"
+                      ? `Ative a renovação automática para continuar usando após ${formatDate(subscriptionStatus?.endDate)}.`
+                      : `Reative sua assinatura para continuar usando após ${formatDate(subscriptionStatus?.endDate)}.`}
                   </Paragraph>
                 </>
               ) : (
@@ -281,10 +325,12 @@ export default function Settings() {
                     loading={processing}
                     block
                   >
-                    Cancelar Assinatura
+                    {subscriptionStatus?.status === "trialing" ? "Cancelar Renovação Automática" : "Cancelar Assinatura"}
                   </Button>
                   <Paragraph type="secondary" style={{ textAlign: "center", marginTop: "8px", fontSize: "12px" }}>
-                    Ao cancelar, você continuará tendo acesso até {formatDate(subscriptionStatus?.endDate)}.
+                    {subscriptionStatus?.status === "trialing"
+                      ? `Seu período de teste não será renovado e expirará em ${formatDate(subscriptionStatus?.endDate)}.`
+                      : `Ao cancelar, você continuará tendo acesso até ${formatDate(subscriptionStatus?.endDate)}.`}
                   </Paragraph>
                 </>
               )}
