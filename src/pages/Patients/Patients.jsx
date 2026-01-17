@@ -125,8 +125,9 @@ export default function Patients() {
             type="primary"
             icon={<EyeOutlined />}
             onClick={() => navigate(`/patient/${record.key}`)}
+            className="action-button"
           >
-            Ver mais
+            <span className="button-text">Ver mais</span>
           </Button>
         </Space>
       ),
@@ -144,7 +145,8 @@ export default function Patients() {
         onCancel={() => setIsModalOpen(false)}
         okText="Adicionar"
         cancelText="Cancelar"
-        width={700}
+        width="90%"
+        style={{ maxWidth: 700 }}
         styles={{
           body: {
             maxHeight: "250px",
@@ -258,11 +260,13 @@ export default function Patients() {
         <Title level={3}>Pacientes</Title>
 
         <div
+          className="patients-header"
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: 16,
+            gap: 12,
           }}
         >
           <Input.Search
@@ -270,7 +274,8 @@ export default function Patients() {
             allowClear
             enterButton="Buscar"
             onSearch={(value) => fetchPatients(value)}
-            style={{ width: 300 }}
+            style={{ width: 300, maxWidth: "100%", flex: 1 }}
+            className="search-input"
           />
 
           <Button
@@ -279,18 +284,22 @@ export default function Patients() {
               form.resetFields();
               setIsModalOpen(true);
             }}
+            className="add-button"
           >
             + Adicionar Paciente
           </Button>
         </div>
       </div>
 
-      <Table
-        dataSource={patients}
-        columns={columns}
-        loading={loading}
-        pagination={false}
-      />
+      <div className="table-wrapper">
+        <Table
+          dataSource={patients}
+          columns={columns}
+          loading={loading}
+          pagination={false}
+          scroll={{ x: true }}
+        />
+      </div>
     </div>
   );
 }

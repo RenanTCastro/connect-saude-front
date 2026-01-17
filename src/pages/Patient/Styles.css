@@ -1,0 +1,49 @@
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .patient-details-container {
+    padding: 12px !important;
+  }
+
+  .patient-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .edit-button {
+    width: 100%;
+  }
+
+  .form-row {
+    flex-direction: column !important;
+  }
+
+  .form-item-responsive {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+
+  .ant-col {
+    margin-bottom: 16px;
+  }
+
+  /* Ajustes nas faturas e consultas */
+  .ant-card {
+    margin-bottom: 16px;
+  }
+
+  /* Ajustes nos cards de informações */
+  .ant-card-body p {
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .patient-details-container {
+    padding: 8px !important;
+  }
+
+  .ant-card-body p {
+    font-size: 12px;
+  }
+}

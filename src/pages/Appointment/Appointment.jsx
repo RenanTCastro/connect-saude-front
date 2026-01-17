@@ -535,55 +535,57 @@ export default function Appointment() {
     <div>
       {contextHolder}
 
-      <Title level={3}>Agenda</Title>
+      <Title level={3} className="appointment-title">Agenda</Title>
 
-      <Space
-        style={{ marginBottom: 16, width: "100%", justifyContent: "space-between" }}
-      >
-        <Space>
+      <div className="appointment-controls">
+        <Space className="appointment-controls-left" wrap>
           <Button icon={<LeftOutlined />} onClick={handlePrev} />
           <Button onClick={handleToday}>HOJE</Button>
           <Button icon={<RightOutlined />} onClick={handleNext} />
-          <Title level={4} style={{ margin: 0 }}>
+          <Title level={4} className="appointment-date-range">
             {currentDateRange || "Agenda"}
           </Title>
         </Space>
-        <Space>
+        <Space className="appointment-controls-right" wrap>
           <Select
             value={viewType}
             onChange={handleViewChange}
-            style={{ width: 120 }}
+            className="appointment-view-select"
           >
             <Option value="timeGridWeek">Semana</Option>
             <Option value="timeGridDay">Dia</Option>
           </Select>
-          <Button icon={<PlusOutlined />} onClick={handleCreateClick}>
-            Nova Consulta
+          <Button icon={<PlusOutlined />} onClick={handleCreateClick} className="appointment-btn-consulta">
+            <span className="appointment-btn-text">Consulta</span>
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateCompromissoClick}>
-            Novo Compromisso
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateCompromissoClick} className="appointment-btn-compromisso">
+            <span className="appointment-btn-text">Compromisso</span>
           </Button>
         </Space>
-      </Space>
+      </div>
 
-      <Card>
-        <FullCalendar
-          ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-          initialView="timeGridWeek"
-          locale={ptBrLocale}
-          headerToolbar={false}
-          slotMinTime="06:00:00"
-          slotMaxTime="24:00:00"
-          slotDuration="00:15:00"
-          slotLabelInterval="01:00:00"
-          firstDay={1}
-          weekends={true}
-          selectable={true}
-          selectMirror={true}
-          editable={true}
-          events={events}
-          eventContent={(eventInfo) => {
+      <Card className="appointment-calendar-card">
+        <div className="appointment-calendar-wrapper">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+            initialView="timeGridWeek"
+            locale={ptBrLocale}
+            headerToolbar={false}
+            slotMinTime="06:00:00"
+            slotMaxTime="24:00:00"
+            slotDuration="00:15:00"
+            slotLabelInterval="01:00:00"
+            firstDay={1}
+            weekends={true}
+            selectable={true}
+            selectMirror={true}
+            editable={true}
+            events={events}
+            height="auto"
+            contentHeight="auto"
+            aspectRatio={1.8}
+            eventContent={(eventInfo) => {
             const appointment = eventInfo.event.extendedProps.appointment;
             const startTime = dayjs(eventInfo.event.start).format("HH:mm");
             const endTime = eventInfo.event.end
@@ -622,6 +624,7 @@ export default function Appointment() {
           eventChange={handleEventChange}
           datesSet={handleDatesSet}
         />
+        </div>
       </Card>
 
       <ConsultaModal

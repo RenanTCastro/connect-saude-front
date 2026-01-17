@@ -231,8 +231,206 @@
   border-top: 1px solid #f0f0f0;
 }
 
+/* Appointment Controls */
+.appointment-title {
+  margin-bottom: 16px !important;
+}
+
+.appointment-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.appointment-controls-left,
+.appointment-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.appointment-date-range {
+  margin: 0 !important;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+.appointment-view-select {
+  min-width: 120px;
+}
+
+.appointment-btn-text {
+  margin-left: 4px;
+}
+
+/* Calendar Card */
+.appointment-calendar-card {
+  width: 100%;
+  overflow: hidden;
+}
+
+.appointment-calendar-card .ant-card-body {
+  padding: 16px;
+  overflow: hidden;
+}
+
+.appointment-calendar-wrapper {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* FullCalendar Responsive */
+.fc {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.fc-view-harness {
+  overflow-x: auto;
+}
+
+.fc-scroller {
+  overflow-x: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fc-scroller-liquid-absolute {
+  position: relative;
+}
+
+/* Time Grid adjustments */
+.fc-timegrid-body {
+  overflow-x: auto;
+}
+
+.fc-timegrid-cols {
+  min-width: 600px;
+}
+
+/* Column header responsive */
+.fc-col-header {
+  overflow-x: visible;
+}
+
+.fc-col-header-cell {
+  min-width: 100px;
+}
+
+/* Improve touch scrolling on mobile */
+.fc-scroller-harness {
+  touch-action: pan-y pinch-zoom;
+}
+
+.fc-timegrid-body {
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+/* Ensure calendar container doesn't cause horizontal overflow */
+.appointment-calendar-card {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.appointment-calendar-wrapper .fc {
+  max-width: 100%;
+}
+
+/* Event display improvements */
+.fc-event-title-container {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fc-event-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
 /* Responsive adjustments */
+@media (max-width: 1200px) {
+  .appointment-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .appointment-controls-left,
+  .appointment-controls-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .appointment-controls-right {
+    margin-top: 8px;
+  }
+
+  /* Calendar adjustments for medium screens */
+  .fc-timegrid-cols {
+    min-width: 550px;
+  }
+
+  .fc-col-header-cell {
+    min-width: 90px;
+  }
+}
+
 @media (max-width: 768px) {
+  .appointment-title {
+    font-size: 20px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .appointment-controls {
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .appointment-controls-left,
+  .appointment-controls-right {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .appointment-date-range {
+    font-size: 16px !important;
+    width: 100%;
+    text-align: center;
+    margin-top: 8px !important;
+  }
+
+  .appointment-view-select {
+    width: 100% !important;
+    min-width: unset;
+  }
+
+  .appointment-btn-consulta,
+  .appointment-btn-compromisso {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Calendar Card adjustments */
+  .appointment-calendar-card .ant-card-body {
+    padding: 12px;
+  }
+
+  .appointment-calendar-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Calendar adjustments */
+  .fc {
+    font-size: 12px;
+    min-height: 500px;
+  }
+
   .fc-toolbar {
     flex-direction: column;
     gap: 8px;
@@ -241,11 +439,154 @@
   .fc-toolbar-chunk {
     display: flex;
     justify-content: center;
+    width: 100%;
   }
 
   .fc-button-group {
     display: flex;
     gap: 4px;
+  }
+
+  .fc-timegrid-cols {
+    min-width: 480px;
+  }
+
+  .fc-col-header-cell {
+    min-width: 80px;
+    padding: 6px 4px;
+  }
+
+  .fc-col-header-cell-cushion {
+    font-size: 0.9rem;
+  }
+
+  .fc-timegrid-axis {
+    width: 50px !important;
+  }
+
+  .fc-timegrid-axis-cushion {
+    font-size: 9px;
+    padding: 0 4px;
+  }
+
+  .fc-timegrid-slot-label {
+    font-size: 10px;
+  }
+
+  .fc-event {
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 3px;
+  }
+
+  .fc-event-title {
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .fc-event-time {
+    font-size: 8px;
+    margin-top: 1px;
+  }
+
+  .fc .fc-timegrid-slot {
+    height: 25px;
+  }
+
+  .fc-timegrid-event {
+    font-size: 10px;
+  }
+
+  /* Event content adjustments */
+  .fc-event-content-wrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    width: 100%;
+  }
+
+  .fc-event-title-container {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Scrollbar styling for mobile */
+  .fc-scroller::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .appointment-title {
+    font-size: 18px !important;
+  }
+
+  .appointment-date-range {
+    font-size: 14px !important;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .appointment-controls-left,
+  .appointment-controls-right {
+    gap: 4px;
+  }
+
+  .appointment-calendar-card .ant-card-body {
+    padding: 8px;
+  }
+
+  .fc {
+    font-size: 11px;
+    min-height: 400px;
+  }
+
+  .fc-timegrid-cols {
+    min-width: 400px;
+  }
+
+  .fc-col-header-cell {
+    padding: 4px 2px;
+    min-width: 60px;
+  }
+
+  .fc-col-header-cell-cushion {
+    font-size: 0.8rem;
+  }
+
+  .fc-timegrid-axis {
+    width: 45px !important;
+  }
+
+  .fc-timegrid-axis-cushion {
+    font-size: 8px;
+    padding: 0 2px;
+  }
+
+  .fc-timegrid-slot-label {
+    font-size: 9px;
+  }
+
+  .fc-event {
+    font-size: 9px;
+    padding: 1px 3px;
+  }
+
+  .fc-event-title {
+    font-size: 9px;
+  }
+
+  .fc-event-time {
+    font-size: 7px;
+  }
+
+  .fc .fc-timegrid-slot {
+    height: 20px;
+  }
+
+  .fc-timegrid-event {
+    font-size: 9px;
   }
 }
 

@@ -1,0 +1,44 @@
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+  .patients-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .search-input {
+    width: 100% !important;
+  }
+
+  .add-button {
+    width: 100%;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-wrapper .ant-table {
+    min-width: 600px;
+  }
+
+  .action-button {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .action-button .button-text {
+    display: none;
+  }
+
+  .action-button::after {
+    content: "";
+  }
+}
+
+@media (max-width: 480px) {
+  .action-button {
+    padding: 2px 4px;
+    font-size: 11px;
+  }
+}

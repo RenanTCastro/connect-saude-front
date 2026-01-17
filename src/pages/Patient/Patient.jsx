@@ -18,6 +18,7 @@ import {
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../services/api";
+import "./Styles.css";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -113,7 +114,7 @@ export default function PatientDetails() {
   if (loading) return <Spin style={{ display: "block", margin: "80px auto" }} />;
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24 }} className="patient-details-container">
       {contextHolder}
 
       <Button
@@ -125,15 +126,15 @@ export default function PatientDetails() {
         Voltar
       </Button>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="patient-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12 }}>
         <Title level={3}>Paciente</Title>
-        <Button type="default" icon={<EditOutlined />} onClick={handleEdit}>
+        <Button type="default" icon={<EditOutlined />} onClick={handleEdit} className="edit-button">
           Editar
         </Button>
       </div>
 
       <Row gutter={16}>
-        <Col span={12}>
+        <Col xs={24} sm={24} md={12}>
           <Card title="Dados pessoais">
             <p><Text strong>Código do paciente:</Text> {patient?.id}</p>
             <p><Text strong>Nome:</Text> {patient?.full_name}</p>
@@ -150,7 +151,7 @@ export default function PatientDetails() {
           </Card>
         </Col>
 
-        <Col span={12}>
+        <Col xs={24} sm={24} md={12}>
           <Card title="Consultas" style={{ maxHeight: 400, overflowY: "auto" }}>
             {appointments.length === 0 ? (
               <Text type="secondary">Nenhuma consulta registrada.</Text>
@@ -259,7 +260,8 @@ export default function PatientDetails() {
         onCancel={() => setIsEditModalOpen(false)}
         okText="Salvar"
         cancelText="Cancelar"
-        width={700}
+        width="90%"
+        style={{ maxWidth: 700 }}
         styles={{
           body: {
             maxHeight: "250px",
@@ -299,11 +301,12 @@ export default function PatientDetails() {
             </Select>
           </Form.Item>
 
-          <div style={{ display: "flex", gap: 12 }}>
+          <div className="form-row" style={{ display: "flex", gap: 12 }}>
             <Form.Item
               name="cpf"
               label="CPF"
               style={{ flex: 1 }}
+              className="form-item-responsive"
               rules={[
                 { required: true, message: "Informe o CPF!" },
                 { pattern: /^[0-9]{10,11}$/, message: "Somente números!" },
@@ -321,6 +324,7 @@ export default function PatientDetails() {
                 { pattern: /^[0-9]{10,11}$/, message: "Digite um número válido (somente números)." },
                 { min: 11, message: "Digite um número válido." },
               ]}
+              className="form-item-responsive"
             >
               <Input
                 placeholder="Telefone (Whatsapp)"
@@ -332,13 +336,14 @@ export default function PatientDetails() {
               name="birth_date"
               label="Data de nascimento"
               style={{ flex: 1 }}
+              className="form-item-responsive"
               rules={[ { required: true, message: "Por favor, insira a data de nascimento!" }]}
             >
               <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
             </Form.Item>
           </div>
 
-          <div style={{ display: "flex", gap: 12 }}>
+          <div className="form-row" style={{ display: "flex", gap: 12 }}>
             <Form.Item 
                 name="zip_code" 
                 label="CEP" 
@@ -346,24 +351,25 @@ export default function PatientDetails() {
                     { min: 8, message: "Digite um CEP válido."}
                 ]}
                 style={{ flex: "0.7" }}
+                className="form-item-responsive"
             >
               <Input placeholder="CEP" maxLength={8}/>
             </Form.Item>
-            <Form.Item name="street" label="Endereço" style={{ flex: 2 }}>
+            <Form.Item name="street" label="Endereço" style={{ flex: 2 }} className="form-item-responsive">
               <Input placeholder="Rua / Avenida" />
             </Form.Item>
           </div>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <Form.Item name="neighborhood" label="Bairro" style={{ flex: 1 }}>
+          <div className="form-row" style={{ display: "flex", gap: 12 }}>
+            <Form.Item name="neighborhood" label="Bairro" style={{ flex: 1 }} className="form-item-responsive">
               <Input placeholder="Bairro" maxLength={200}/>
             </Form.Item>
 
-            <Form.Item name="city" label="Cidade" style={{ flex: 1 }}>
+            <Form.Item name="city" label="Cidade" style={{ flex: 1 }} className="form-item-responsive">
               <Input placeholder="Cidade" maxLength={200}/>
             </Form.Item>
 
-            <Form.Item name="state" label="UF" style={{ flex: "0.5" }}>
+            <Form.Item name="state" label="UF" style={{ flex: "0.5" }} className="form-item-responsive">
               <Select placeholder="UF">
                 {[
                   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA",
