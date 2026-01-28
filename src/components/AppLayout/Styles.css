@@ -18,8 +18,8 @@
   display: flex;
   align-items: center;
   padding: 12px 16px;
-  background: #001529;
-  border-bottom: 1px solid #1f1f1f;
+  background: #1677ff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   position: sticky;
   top: 0;
@@ -62,8 +62,8 @@
   justify-content: center;
   padding: 8px;
   margin: 0 -24px 16px -24px;
-  background: #001529;
-  border-bottom: 1px solid #1f1f1f;
+  background: #1677ff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .drawer-logo img {
@@ -75,12 +75,12 @@
 /* Sobrescrever background branco do Drawer do Ant Design */
 :where(.css-dev-only-do-not-override-fkecrg).ant-drawer .ant-drawer-content,
 .ant-drawer .ant-drawer-content {
-  background: #001529 !important;
+  background: #1677ff !important;
 }
 
 .ant-drawer .ant-drawer-header {
-  background: #001529 !important;
-  border-bottom: 1px solid #1f1f1f !important;
+  background: #1677ff !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
 .ant-drawer .ant-drawer-header .ant-drawer-close {
@@ -89,6 +89,79 @@
 
 .ant-drawer .ant-drawer-header .ant-drawer-close:hover {
   color: #fff !important;
+}
+
+/* Custom Menu Styles */
+.custom-menu.ant-menu-dark {
+  background: #1677ff !important;
+}
+
+.custom-menu.ant-menu-dark .ant-menu-item {
+  color: #ffffff !important;
+}
+
+.custom-menu.ant-menu-dark .ant-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.custom-menu.ant-menu-dark .ant-menu-item-selected {
+  background-color: #ffffff !important;
+  color: #1677ff !important;
+}
+
+.custom-menu.ant-menu-dark .ant-menu-item-selected .anticon {
+  color: #1677ff !important;
+}
+
+.custom-menu.ant-menu-dark .ant-menu-item .anticon {
+  color: #ffffff !important;
+}
+
+.custom-menu.ant-menu-dark .ant-menu-item-selected .ant-menu-item-icon {
+  color: #1677ff !important;
+}
+
+.custom-menu.ant-menu-dark .ant-menu-item a {
+  color: inherit !important;
+}
+
+.custom-menu.ant-menu-dark .ant-menu-item span {
+  color: inherit !important;
+}
+
+/* Garantir que o texto do item de logout também fique branco */
+.custom-menu.ant-menu-dark .ant-menu-item:not(.ant-menu-item-selected) {
+  color: #ffffff !important;
+}
+
+.custom-menu.ant-menu-dark .ant-menu-item:not(.ant-menu-item-selected) span {
+  color: #ffffff !important;
+}
+
+/* Sider background */
+.ant-layout-sider {
+  background: #1677ff !important;
+}
+
+.ant-layout-sider .ant-menu-dark {
+  background: #1677ff !important;
+}
+
+/* Botão de colapsar/expandir do Sider */
+.ant-layout-sider-trigger {
+  background: #1677ff !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.ant-layout-sider-trigger:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.ant-layout-sider-trigger .anticon {
+  color: #ffffff !important;
 }
 
 /* Ajustes responsivos */

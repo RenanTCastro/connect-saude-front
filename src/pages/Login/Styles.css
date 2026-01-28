@@ -7,6 +7,18 @@
   align-items: center;
 }
 
+.auth-logo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.auth-logo img {
+  max-width: 180px;
+  height: auto;
+  display: block;
+}
+
 .login-form {
   min-width: 300px;
 }

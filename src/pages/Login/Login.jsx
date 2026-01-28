@@ -1,18 +1,19 @@
 import { Form, Input, Button, Typography, message } from "antd";
 import { LockOutlined, MailOutlined } from "@ant-design/icons";
-import { Link, useNavigate} from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { login } from "../../helper/auth";
 import api from "../../services/api";
+import logo from "../../assets/logo_full.svg";
 
 const { Title } = Typography;
 
-import "./Styles.css"
+import "./Styles.css";
 
 export default function Login() {
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
 
-  const handleLogin = async values => {
+  const handleLogin = async (values) => {
     try {
       const res = await api.post('/login', values);
       login(res.data.token);
@@ -25,7 +26,11 @@ export default function Login() {
 
   return (
     <div className="login-page">
-     {contextHolder}
+      {contextHolder}
+
+      <div className="auth-logo">
+        <img src={logo} alt="Connect Saúde" />
+      </div>
 
       <Title level={3}>Entrar na conta</Title>
       <Form

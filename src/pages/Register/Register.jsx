@@ -2,16 +2,17 @@ import { Form, Input, Button, Typography, message } from "antd";
 import { LockOutlined, UserOutlined, MailOutlined, PhoneOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import logo from "../../assets/logo_full.svg";
 
 const { Title } = Typography;
 
-import "./Styles.css"
+import "./Styles.css";
 
 export default function Register() {
   const [messageApi, contextHolder] = message.useMessage();
   const navigate = useNavigate();
 
-  const handleRegister = async values => {
+  const handleRegister = async (values) => {
     try {
       console.log(values)
       await api.post('/register', values);
@@ -25,6 +26,11 @@ export default function Register() {
   return (
     <div className="register-page">
       {contextHolder}
+
+      <div className="auth-logo">
+        <img src={logo} alt="Connect Saúde" />
+      </div>
+
       <Title level={3}>Criar conta</Title>
       <Form
         name="register_form"
