@@ -11,7 +11,7 @@ import {
   SettingOutlined,
   MenuOutlined,
 } from "@ant-design/icons";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { logout } from "../../helper/auth";
 import logo from "../../assets/logo.svg";
 
@@ -21,6 +21,7 @@ const { Content, Sider } = Layout;
 
 export default function AppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -40,6 +41,18 @@ export default function AppLayout() {
   const handleLogout = () => {
     logout();
     navigate("/login");
+  };
+
+  // Determinar qual item está ativo baseado na rota atual
+  const getSelectedKey = () => {
+    const path = location.pathname;
+    if (path === "/") return ["1"];
+    if (path === "/appointment") return ["2"];
+    if (path.startsWith("/patient")) return ["3"];
+    if (path === "/sales") return ["4"];
+    if (path === "/inventory") return ["5"];
+    if (path === "/settings") return ["6"];
+    return [];
   };
 
   const menuItems = [
@@ -92,8 +105,9 @@ export default function AppLayout() {
       <Menu
         theme="dark"
         mode="inline"
-        defaultSelectedKeys={["1"]}
+        selectedKeys={getSelectedKey()}
         items={menuItems}
+        className="custom-menu"
       />
     </>
   );
@@ -107,6 +121,7 @@ export default function AppLayout() {
           onCollapse={setCollapsed}
           breakpoint="lg"
           collapsedWidth={isMobile ? 0 : 80}
+          style={{ background: "#1677ff" }}
         >
           {menuContent}
         </Sider>
@@ -144,7 +159,7 @@ export default function AppLayout() {
           placement="left"
           onClose={() => setMobileMenuOpen(false)}
           open={mobileMenuOpen}
-          bodyStyle={{ padding: 0, background: "#001529" }}
+          bodyStyle={{ padding: 0, background: "#1677ff" }}
           width={280}
         >
           <div className="drawer-logo">
@@ -153,8 +168,9 @@ export default function AppLayout() {
           <Menu
             theme="dark"
             mode="inline"
-            defaultSelectedKeys={["1"]}
+            selectedKeys={getSelectedKey()}
             items={menuItems}
+            className="custom-menu"
           />
         </Drawer>
       )}
