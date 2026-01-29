@@ -14,12 +14,18 @@ export default function Register() {
 
   const handleRegister = async (values) => {
     try {
-      console.log(values)
       await api.post('/register', values);
+      messageApi.success("Conta criada com sucesso! Você pode fazer login agora.");
       navigate("/login");
     } catch (err) {
-      console.log(err)
-      messageApi.error("Aconteceu algum erro, tente novamente mais tarde!");
+      console.error("Erro ao registrar:", err);
+      
+      // Extrai a mensagem de erro da resposta da API
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.message || 
+                          "Erro ao criar conta. Verifique os dados e tente novamente.";
+      
+      messageApi.error(errorMessage);
     }
   };
 

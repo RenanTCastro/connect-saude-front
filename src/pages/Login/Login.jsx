@@ -19,8 +19,14 @@ export default function Login() {
       login(res.data.token);
       navigate("/app");
     } catch (err) {
-      console.log(err)
-      messageApi.error("Aconteceu algum erro, tente novamente mais tarde!");
+      console.error("Erro ao fazer login:", err);
+      
+      // Extrai a mensagem de erro da resposta da API
+      const errorMessage = err.response?.data?.error || 
+                          err.response?.data?.message || 
+                          "Erro ao fazer login. Verifique suas credenciais e tente novamente.";
+      
+      messageApi.error(errorMessage);
     }
   };
 
