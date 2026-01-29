@@ -79,7 +79,7 @@ export default function SubscriptionGuard({ children }) {
 
   const handleGoToSettings = () => {
     setIsModalVisible(false);
-    navigate("/settings");
+    navigate("/app/settings");
   };
 
   // Durante carregamento, não bloquear

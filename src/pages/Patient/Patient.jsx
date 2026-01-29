@@ -104,7 +104,7 @@ export default function PatientDetails() {
     try {
       await api.delete(`/patients/${id}`);
       messageApi.success("Paciente excluído com sucesso!");
-      navigate("/patient");
+      navigate("/app/patient");
     } catch (err) {
       console.error(err);
       messageApi.error("Erro ao excluir paciente.");
@@ -120,7 +120,7 @@ export default function PatientDetails() {
       <Button
         type="link"
         icon={<ArrowLeftOutlined />}
-        onClick={() => navigate("/patient")}
+        onClick={() => navigate("/app/patient")}
         style={{ marginBottom: 8 }}
       >
         Voltar
@@ -185,7 +185,7 @@ export default function PatientDetails() {
                   <Button 
                     type="link" 
                     style={{ padding: 0 }}
-                    onClick={() => navigate(`/appointment`)}
+                    onClick={() => navigate(`/app/appointment`)}
                   >
                     Ver na agenda
                   </Button>
