@@ -17,7 +17,7 @@ export default function Login() {
     try {
       const res = await api.post('/login', values);
       login(res.data.token);
-      navigate("/");
+      navigate("/app");
     } catch (err) {
       console.log(err)
       messageApi.error("Aconteceu algum erro, tente novamente mais tarde!");

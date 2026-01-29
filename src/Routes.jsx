@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 
 import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
+import Landing from "./pages/Landing/Landing";
 import Inventory from "./pages/Inventory/Inventory";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import SubscriptionGuard from "./components/SubscriptionGuard/SubscriptionGuard";
@@ -15,6 +16,14 @@ import Settings from "./pages/Settings/Settings";
 
 const router = createBrowserRouter([
     {
+        path: "/",
+        element: <Landing />,
+    },
+    {
+        path: "/landing",
+        element: <Landing />,
+    },
+    {
         path: "/login",
         element: <Login />,
     },
@@ -23,7 +32,7 @@ const router = createBrowserRouter([
         element: <Register />,
     },
     {
-        path: "/",
+        path: "/app",
         element: <AppLayout />,
         children: [
             { index: true, element: <ProtectedRoute><SubscriptionGuard><CashFlow/></SubscriptionGuard></ProtectedRoute>},
@@ -38,7 +47,7 @@ const router = createBrowserRouter([
     },
     {
         path: "*", 
-        element: <>ERRO</>,
+        element: <Landing />,
     },
 ]);
 

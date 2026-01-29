@@ -40,18 +40,18 @@ export default function AppLayout() {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
   };
 
   // Determinar qual item está ativo baseado na rota atual
   const getSelectedKey = () => {
     const path = location.pathname;
-    if (path === "/") return ["1"];
-    if (path === "/appointment") return ["2"];
-    if (path.startsWith("/patient")) return ["3"];
-    if (path === "/sales") return ["4"];
-    if (path === "/inventory") return ["5"];
-    if (path === "/settings") return ["6"];
+    if (path === "/app" || path === "/app/") return ["1"];
+    if (path === "/app/appointment") return ["2"];
+    if (path.startsWith("/app/patient")) return ["3"];
+    if (path === "/app/sales") return ["4"];
+    if (path === "/app/inventory") return ["5"];
+    if (path === "/app/settings") return ["6"];
     return [];
   };
 
@@ -59,32 +59,32 @@ export default function AppLayout() {
     {
       key: "1",
       icon: <HomeOutlined />,
-      label: <Link to="/" onClick={() => setMobileMenuOpen(false)}>Home</Link>,
+      label: <Link to="/app" onClick={() => setMobileMenuOpen(false)}>Home</Link>,
     },
     {
       key: "2",
       icon: <CalendarOutlined />,
-      label: <Link to="/appointment" onClick={() => setMobileMenuOpen(false)}>Agenda</Link>,
+      label: <Link to="/app/appointment" onClick={() => setMobileMenuOpen(false)}>Agenda</Link>,
     },
     {
       key: "3",
       icon: <TeamOutlined />,
-      label: <Link to="/patient" onClick={() => setMobileMenuOpen(false)}>Pacientes</Link>,
+      label: <Link to="/app/patient" onClick={() => setMobileMenuOpen(false)}>Pacientes</Link>,
     },
     {
       key: "4",
       icon: <ShoppingOutlined />,
-      label: <Link to="/sales" onClick={() => setMobileMenuOpen(false)}>Vendas</Link>,
+      label: <Link to="/app/sales" onClick={() => setMobileMenuOpen(false)}>Vendas</Link>,
     },
     {
       key: "5",
       icon: <InboxOutlined />,
-      label: <Link to="/inventory" onClick={() => setMobileMenuOpen(false)}>Estoque</Link>,
+      label: <Link to="/app/inventory" onClick={() => setMobileMenuOpen(false)}>Estoque</Link>,
     },
     {
       key: "6",
       icon: <SettingOutlined />,
-      label: <Link to="/settings" onClick={() => setMobileMenuOpen(false)}>Configurações</Link>,
+      label: <Link to="/app/settings" onClick={() => setMobileMenuOpen(false)}>Configurações</Link>,
     },
     {
       key: "7",
