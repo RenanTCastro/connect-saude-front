@@ -124,7 +124,7 @@ export default function Patients() {
           <Button
             type="primary"
             icon={<EyeOutlined />}
-            onClick={() => navigate(`/patient/${record.key}`)}
+            onClick={() => navigate(`/app/patient/${record.key}`)}
             className="action-button"
           >
             <span className="button-text">Ver mais</span>
