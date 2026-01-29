@@ -14,6 +14,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import logoFull from "../../assets/logo_full.svg";
 import mockupImage from "../../assets/mockup.svg";
+import WhatsAppButton from "../../components/WhatsAppButton/WhatsAppButton";
 import "./Landing.css";
 
 const { Title, Paragraph, Text } = Typography;
@@ -442,6 +443,7 @@ export default function Landing() {
           </Text>
         </div>
       </footer>
+      <WhatsAppButton />
     </div>
   );
 }

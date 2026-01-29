@@ -3,6 +3,7 @@ import { LockOutlined, UserOutlined, MailOutlined, PhoneOutlined } from "@ant-de
 import { Link, useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import logo from "../../assets/logo_full.svg";
+import WhatsAppButton from "../../components/WhatsAppButton/WhatsAppButton";
 
 const { Title } = Typography;
 
@@ -125,6 +126,7 @@ export default function Register() {
           Já tem uma conta?  <Link to="/login">Entrar</Link>
         </Form.Item>
       </Form>
+      <WhatsAppButton />
     </div>
   );
 }

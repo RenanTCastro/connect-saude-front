@@ -1,0 +1,48 @@
+/* Botão de WhatsApp fixo */
+.whatsapp-button {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  width: 60px !important;
+  height: 60px !important;
+  background-color: #25d366 !important;
+  border-color: #25d366 !important;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4) !important;
+  z-index: 1000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+}
+
+.whatsapp-button:hover {
+  background-color: #20ba5a !important;
+  border-color: #20ba5a !important;
+  box-shadow: 0 6px 16px rgba(37, 211, 102, 0.6) !important;
+  transform: scale(1.1) !important;
+}
+
+.whatsapp-button:active {
+  transform: scale(0.95) !important;
+}
+
+.whatsapp-button svg {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+  .whatsapp-button {
+    bottom: 16px !important;
+    right: 16px !important;
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .whatsapp-button svg {
+    width: 26px;
+    height: 26px;
+  }
+}
