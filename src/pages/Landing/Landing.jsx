@@ -201,7 +201,7 @@ export default function Landing() {
         <div className="hero-container">
           <div className="hero-content">
             <div className="trial-badge">
-              <StarFilled /> 7 dias grátis • Depois R$ 79,90/mês
+              <StarFilled /> 7 dias grátis
             </div>
             <Title level={1} className="hero-title">
               Gerencie seu consultório odontológico de forma completa e inteligente
@@ -359,7 +359,7 @@ export default function Landing() {
           <Card className="cta-card">
             <div className="cta-content">
               <div className="trial-badge-large">
-                <StarFilled /> 7 dias grátis • Depois R$ 79,90/mês
+                <StarFilled /> 7 dias grátis
               </div>
               <Title level={2} className="cta-title">
                 Comece a transformar seu consultório hoje
