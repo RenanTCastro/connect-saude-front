@@ -514,6 +514,8 @@ export default function CashFlow() {
                   pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
                   rowKey="id"
                   scroll={{ x: true }}
+                  showHeader={incomes.length > 0}
+                  locale={{ emptyText: "Nenhum dado disponível" }}
                 />
               </div>
             </div>
@@ -550,6 +552,8 @@ export default function CashFlow() {
                   pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
                   rowKey="id"
                   scroll={{ x: true }}
+                  showHeader={expenses.length > 0}
+                  locale={{ emptyText: "Nenhum dado disponível" }}
                 />
               </div>
             </div>
@@ -632,6 +636,8 @@ export default function CashFlow() {
               pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
               rowKey="id"
               scroll={{ x: true }}
+              showHeader={pendingInstallments.length > 0}
+              locale={{ emptyText: "Nenhum dado disponível" }}
               rowClassName={(record) =>
                 dayjs(record.dueDate).isBefore(dayjs(), "day")
                   ? "overdue-row"

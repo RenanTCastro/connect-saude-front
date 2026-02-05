@@ -215,6 +215,8 @@ export default function InventoryTable() {
           loading={loading}
           pagination={false}
           scroll={{ x: true }}
+          showHeader={data.length > 0}
+          locale={{ emptyText: "Nenhum dado disponível" }}
         />
       </div>
     </div>

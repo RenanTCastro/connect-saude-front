@@ -298,6 +298,8 @@ export default function Patients() {
           loading={loading}
           pagination={false}
           scroll={{ x: true }}
+          showHeader={patients.length > 0}
+          locale={{ emptyText: "Nenhum dado disponível" }}
         />
       </div>
     </div>
