@@ -142,6 +142,8 @@ const addStageCardStyles = {
 
 const addStageCardBodyStyles = {
   display: "flex",
+  flexDirection: "column",
+  gap: 8,
   alignItems: "center",
   justifyContent: "center",
   height: "100%"
@@ -307,6 +309,7 @@ const AddStageCard = ({ onClick }) => (
     bodyStyle={addStageCardBodyStyles}
     onClick={onClick}
   >
+    <Text style={{ fontSize: 16, fontWeight: 500, color: "#8c8c8c" }}>Adicionar Estágio</Text>
     <PlusOutlined style={{ fontSize: 32, color: "#8c8c8c" }} />
   </Card>
 );
@@ -519,15 +522,9 @@ const CreateOpportunityModal = ({
             min={0}
             step={10}
             precision={2}
-            formatter={(value) => {
-              if (!value) return '';
-              const numValue = typeof value === 'string' ? parseFloat(value) : value;
-              return `R$ ${numValue.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-            }}
-            parser={(value) => {
-              if (!value) return '';
-              return value.replace(/R\$\s?|,/g, '');
-            }}
+            prefix="R$"
+            decimalSeparator=","
+            thousandSeparator="."
           />
         </Form.Item>
 
@@ -676,15 +673,9 @@ const OpportunityDetailsModal = ({
                 min={0}
                 step={0.01}
                 precision={2}
-                formatter={(value) => {
-                  if (!value) return '';
-                  const numValue = typeof value === 'string' ? parseFloat(value) : value;
-                  return `R$ ${numValue.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-                }}
-                parser={(value) => {
-                  if (!value) return '';
-                  return value.replace(/R\$\s?|,/g, '');
-                }}
+                prefix="R$"
+                decimalSeparator=","
+                thousandSeparator="."
               />
             </Form.Item>
 
