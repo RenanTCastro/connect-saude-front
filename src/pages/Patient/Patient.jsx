@@ -14,6 +14,7 @@ import {
   Select,
   DatePicker,
   message,
+  Space,
 } from "antd";
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -128,9 +129,20 @@ export default function PatientDetails() {
 
       <div className="patient-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12 }}>
         <Title level={3}>Paciente</Title>
-        <Button type="default" icon={<EditOutlined />} onClick={handleEdit} className="edit-button">
-          Editar
-        </Button>
+        <Space>
+          <Button type="default" icon={<EditOutlined />} onClick={handleEdit} className="edit-button">
+            Editar
+          </Button>
+          <Button 
+            type="primary" 
+            danger 
+            icon={<DeleteOutlined />} 
+            onClick={() => setIsDeleteConfirmOpen(true)}
+            className="delete-button"
+          >
+            Excluir
+          </Button>
+        </Space>
       </div>
 
       <Row gutter={16}>
@@ -270,9 +282,6 @@ export default function PatientDetails() {
           },
         }}
         footer={[
-          <Button key="delete" danger icon={<DeleteOutlined />} onClick={() => setIsDeleteConfirmOpen(true)}>
-            Excluir
-          </Button>,
           <Button key="cancel" onClick={() => setIsEditModalOpen(false)}>
             Cancelar
           </Button>,
