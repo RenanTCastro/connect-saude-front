@@ -97,7 +97,8 @@ export default function PatientDetails() {
       fetchData();
     } catch (err) {
       console.error(err);
-      messageApi.error("Erro ao atualizar paciente.");
+      const errorMessage = err.response?.data?.error || "Erro ao atualizar paciente.";
+      messageApi.error(errorMessage);
     }
   };
 

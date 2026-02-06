@@ -76,7 +76,8 @@ export default function Patients() {
       fetchPatients();
     } catch (err) {
       console.error(err);
-      messageApi.error("Erro ao criar paciente.");
+      const errorMessage = err.response?.data?.error || "Erro ao criar paciente.";
+      messageApi.error(errorMessage);
     }
   };
 
