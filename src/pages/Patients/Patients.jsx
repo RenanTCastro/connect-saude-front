@@ -76,7 +76,8 @@ export default function Patients() {
       fetchPatients();
     } catch (err) {
       console.error(err);
-      messageApi.error("Erro ao criar paciente.");
+      const errorMessage = err.response?.data?.error || "Erro ao criar paciente.";
+      messageApi.error(errorMessage);
     }
   };
 
@@ -149,7 +150,7 @@ export default function Patients() {
         style={{ maxWidth: 700 }}
         styles={{
           body: {
-            maxHeight: "250px",
+            maxHeight: "450px",
             overflowY: "auto",
             paddingRight: 12,
           },
@@ -298,6 +299,8 @@ export default function Patients() {
           loading={loading}
           pagination={false}
           scroll={{ x: true }}
+          showHeader={patients.length > 0}
+          locale={{ emptyText: "Nenhum dado disponível" }}
         />
       </div>
     </div>

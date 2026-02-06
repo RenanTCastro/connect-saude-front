@@ -24,6 +24,8 @@ import {
   ArrowDownOutlined,
   DollarOutlined,
   CheckCircleOutlined,
+  EditOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../services/api";
@@ -46,6 +48,9 @@ export default function CashFlow() {
   const [expenseForm] = Form.useForm();
   const [hasInstallments, setHasInstallments] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [editingIncome, setEditingIncome] = useState(null);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, type: null, id: null, title: null });
   
   // Estados para filtros e dados
   const [dateRange, setDateRange] = useState([
@@ -201,14 +206,52 @@ export default function CashFlow() {
         };
       }
       
-      await api.post("/cashflow/income", formData);
-      messageApi.success("Receita criada com sucesso!");
+      if (editingIncome) {
+        // Editar receita existente
+        await api.put(`/cashflow/income/${editingIncome.id}`, formData);
+        messageApi.success("Receita atualizada com sucesso!");
+      } else {
+        // Criar nova receita
+        await api.post("/cashflow/income", formData);
+        messageApi.success("Receita criada com sucesso!");
+      }
+      
       setIsIncomeModalOpen(false);
       incomeForm.resetFields();
+      setEditingIncome(null);
+      setHasInstallments(false);
       fetchPeriodData();
     } catch (err) {
       console.error(err);
-      messageApi.error("Erro ao criar receita");
+      messageApi.error(editingIncome ? "Erro ao atualizar receita" : "Erro ao criar receita");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditIncome = (record) => {
+    setEditingIncome(record);
+    incomeForm.setFieldsValue({
+      title: record.title || "",
+      description: record.description || "",
+      amount: record.amount,
+      dueDate: record.dueDate ? dayjs(record.dueDate) : null,
+      patientId: record.patientId || undefined,
+      paymentType: record.paymentType,
+    });
+    setIsIncomeModalOpen(true);
+  };
+
+  const handleDeleteIncome = async () => {
+    try {
+      setLoading(true);
+      await api.delete(`/cashflow/income/${deleteConfirm.id}`);
+      messageApi.success("Receita deletada com sucesso!");
+      setDeleteConfirm({ open: false, type: null, id: null, title: null });
+      fetchPeriodData();
+    } catch (err) {
+      console.error(err);
+      messageApi.error("Erro ao deletar receita");
     } finally {
       setLoading(false);
     }
@@ -232,14 +275,57 @@ export default function CashFlow() {
         };
       }
       
-      await api.post("/cashflow/expense", formData);
-      messageApi.success("Despesa criada com sucesso!");
+      if (editingExpense) {
+        // Editar despesa existente
+        await api.put(`/cashflow/expense/${editingExpense.id}`, formData);
+        messageApi.success("Despesa atualizada com sucesso!");
+      } else {
+        // Criar nova despesa
+        await api.post("/cashflow/expense", formData);
+        messageApi.success("Despesa criada com sucesso!");
+      }
+      
       setIsExpenseModalOpen(false);
       expenseForm.resetFields();
+      setEditingExpense(null);
+      setIsRecurring(false);
       fetchPeriodData();
     } catch (err) {
       console.error(err);
-      messageApi.error("Erro ao criar despesa");
+      messageApi.error(editingExpense ? "Erro ao atualizar despesa" : "Erro ao criar despesa");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditExpense = (record) => {
+    setEditingExpense(record);
+    const recurrence = record.recurrence ? (typeof record.recurrence === 'string' ? JSON.parse(record.recurrence) : record.recurrence) : null;
+    expenseForm.setFieldsValue({
+      title: record.title || "",
+      description: record.description || "",
+      amount: record.amount,
+      dueDate: record.dueDate ? dayjs(record.dueDate) : null,
+      paymentType: record.paymentType,
+      isRecurring: !!recurrence,
+      recurrenceFrequency: recurrence?.frequency,
+      recurrenceInterval: recurrence?.interval,
+      endDate: recurrence?.endDate ? dayjs(recurrence.endDate) : null,
+    });
+    setIsRecurring(!!recurrence);
+    setIsExpenseModalOpen(true);
+  };
+
+  const handleDeleteExpense = async () => {
+    try {
+      setLoading(true);
+      await api.delete(`/cashflow/expense/${deleteConfirm.id}`);
+      messageApi.success("Despesa deletada com sucesso!");
+      setDeleteConfirm({ open: false, type: null, id: null, title: null });
+      fetchPeriodData();
+    } catch (err) {
+      console.error(err);
+      messageApi.error("Erro ao deletar despesa");
     } finally {
       setLoading(false);
     }
@@ -255,6 +341,21 @@ export default function CashFlow() {
     } catch (err) {
       console.error(err);
       messageApi.error("Erro ao marcar parcela como paga");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handler para toggle do status de pagamento
+  const handleTogglePaidStatus = async (record, type) => {
+    try {
+      setLoading(true);
+      const res = await api.put(`/cashflow/transactions/${record.id}/toggle-paid?type=${type}`);
+      messageApi.success(res.data.message);
+      fetchPeriodData();
+    } catch (err) {
+      console.error(err);
+      messageApi.error("Erro ao alterar status de pagamento");
     } finally {
       setLoading(false);
     }
@@ -302,6 +403,45 @@ export default function CashFlow() {
       ),
       align: "right",
     },
+    {
+      title: "Pago",
+      key: "isPaid",
+      render: (_, record) => (
+        <Switch
+          checked={record.isPaid || false}
+          onChange={() => handleTogglePaidStatus(record, "income")}
+          checkedChildren="Sim"
+          unCheckedChildren="Não"
+        />
+      ),
+      align: "center",
+    },
+    {
+      title: "Ações",
+      key: "actions",
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="default"
+            icon={<EditOutlined />}
+            onClick={() => handleEditIncome(record)}
+            size="small"
+          >
+            Editar
+          </Button>
+          <Button
+            type="primary"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => setDeleteConfirm({ open: true, type: "income", id: record.id, title: record.title })}
+            size="small"
+          >
+            Excluir
+          </Button>
+        </Space>
+      ),
+      align: "right",
+    },
   ];
 
   // Colunas da tabela de despesas
@@ -338,6 +478,45 @@ export default function CashFlow() {
             maximumFractionDigits: 2,
           })}
         </Text>
+      ),
+      align: "right",
+    },
+    {
+      title: "Pago",
+      key: "isPaid",
+      render: (_, record) => (
+        <Switch
+          checked={record.isPaid || false}
+          onChange={() => handleTogglePaidStatus(record, "expense")}
+          checkedChildren="Sim"
+          unCheckedChildren="Não"
+        />
+      ),
+      align: "center",
+    },
+    {
+      title: "Ações",
+      key: "actions",
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="default"
+            icon={<EditOutlined />}
+            onClick={() => handleEditExpense(record)}
+            size="small"
+          >
+            Editar
+          </Button>
+          <Button
+            type="primary"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => setDeleteConfirm({ open: true, type: "expense", id: record.id, title: record.title })}
+            size="small"
+          >
+            Excluir
+          </Button>
+        </Space>
       ),
       align: "right",
     },
@@ -514,6 +693,8 @@ export default function CashFlow() {
                   pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
                   rowKey="id"
                   scroll={{ x: true }}
+                  showHeader={incomes.length > 0}
+                  locale={{ emptyText: "Nenhum dado disponível" }}
                 />
               </div>
             </div>
@@ -550,6 +731,8 @@ export default function CashFlow() {
                   pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
                   rowKey="id"
                   scroll={{ x: true }}
+                  showHeader={expenses.length > 0}
+                  locale={{ emptyText: "Nenhum dado disponível" }}
                 />
               </div>
             </div>
@@ -632,6 +815,8 @@ export default function CashFlow() {
               pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
               rowKey="id"
               scroll={{ x: true }}
+              showHeader={pendingInstallments.length > 0}
+              locale={{ emptyText: "Nenhum dado disponível" }}
               rowClassName={(record) =>
                 dayjs(record.dueDate).isBefore(dayjs(), "day")
                   ? "overdue-row"
@@ -656,17 +841,40 @@ export default function CashFlow() {
         size="large"
       />
 
-      {/* Modal de Nova Receita */}
+      {/* Modal de Confirmação de Exclusão */}
       <Modal
-        title="Nova Receita"
+        title="Confirmar Exclusão"
+        open={deleteConfirm.open}
+        onOk={() => {
+          if (deleteConfirm.type === "income") {
+            handleDeleteIncome();
+          } else {
+            handleDeleteExpense();
+          }
+        }}
+        onCancel={() => setDeleteConfirm({ open: false, type: null, id: null, title: null })}
+        okText="Sim, excluir"
+        cancelText="Cancelar"
+        okButtonProps={{ danger: true }}
+        confirmLoading={loading}
+      >
+        <p>
+          Tem certeza que deseja excluir {deleteConfirm.type === "income" ? "a receita" : "a despesa"} <strong>{deleteConfirm.title}</strong>?
+        </p>
+      </Modal>
+
+      {/* Modal de Nova/Editar Receita */}
+      <Modal
+        title={editingIncome ? "Editar Receita" : "Nova Receita"}
         open={isIncomeModalOpen}
         onOk={() => incomeForm.submit()}
         onCancel={() => {
           setIsIncomeModalOpen(false);
           incomeForm.resetFields();
           setHasInstallments(false);
+          setEditingIncome(null);
         }}
-        okText="Criar"
+        okText={editingIncome ? "Salvar" : "Criar"}
         cancelText="Cancelar"
         width="90%"
         style={{ maxWidth: 600 }}
@@ -699,6 +907,8 @@ export default function CashFlow() {
               style={{ width: "100%" }}
               prefix="R$"
               placeholder="0,00"
+              decimalSeparator=","
+              thousandSeparator="."
             />
           </Form.Item>
 
@@ -744,25 +954,27 @@ export default function CashFlow() {
             </Select>
           </Form.Item>
 
-          <Form.Item name="hasInstallments" valuePropName="checked">
-            <Switch 
-              checkedChildren="Parcelado" 
-              unCheckedChildren="À vista"
-              onChange={(checked) => {
-                setHasInstallments(checked);
-                if (!checked) {
-                  incomeForm.setFieldsValue({
-                    installmentCount: undefined,
-                    firstInstallmentDate: undefined,
-                    intervalType: undefined,
-                    installmentInterval: undefined,
-                  });
-                }
-              }}
-            />
-          </Form.Item>
+          {!editingIncome && (
+            <Form.Item name="hasInstallments" valuePropName="checked">
+              <Switch 
+                checkedChildren="Parcelado" 
+                unCheckedChildren="À vista"
+                onChange={(checked) => {
+                  setHasInstallments(checked);
+                  if (!checked) {
+                    incomeForm.setFieldsValue({
+                      installmentCount: undefined,
+                      firstInstallmentDate: undefined,
+                      intervalType: undefined,
+                      installmentInterval: undefined,
+                    });
+                  }
+                }}
+              />
+            </Form.Item>
+          )}
 
-          {hasInstallments && (
+          {hasInstallments && !editingIncome && (
             <>
               <Form.Item
                 name="installmentCount"
@@ -819,17 +1031,18 @@ export default function CashFlow() {
         </Form>
       </Modal>
 
-      {/* Modal de Nova Despesa */}
+      {/* Modal de Nova/Editar Despesa */}
       <Modal
-        title="Nova Despesa"
+        title={editingExpense ? "Editar Despesa" : "Nova Despesa"}
         open={isExpenseModalOpen}
         onOk={() => expenseForm.submit()}
         onCancel={() => {
           setIsExpenseModalOpen(false);
           expenseForm.resetFields();
           setIsRecurring(false);
+          setEditingExpense(null);
         }}
-        okText="Criar"
+        okText={editingExpense ? "Salvar" : "Criar"}
         cancelText="Cancelar"
         width="90%"
         style={{ maxWidth: 600 }}
@@ -862,6 +1075,8 @@ export default function CashFlow() {
               style={{ width: "100%" }}
               prefix="R$"
               placeholder="0,00"
+              decimalSeparator=","
+              thousandSeparator="."
             />
           </Form.Item>
 
@@ -886,22 +1101,24 @@ export default function CashFlow() {
             </Select>
           </Form.Item>
 
-          <Form.Item name="isRecurring" valuePropName="checked">
-            <Switch 
-              checkedChildren="Recorrente" 
-              unCheckedChildren="Única"
-              onChange={(checked) => {
-                setIsRecurring(checked);
-                if (!checked) {
-                  expenseForm.setFieldsValue({
-                    recurrenceFrequency: undefined,
-                    recurrenceInterval: undefined,
-                    endDate: undefined,
-                  });
-                }
-              }}
-            />
-          </Form.Item>
+          {!editingExpense && (
+            <Form.Item name="isRecurring" valuePropName="checked">
+              <Switch 
+                checkedChildren="Recorrente" 
+                unCheckedChildren="Única"
+                onChange={(checked) => {
+                  setIsRecurring(checked);
+                  if (!checked) {
+                    expenseForm.setFieldsValue({
+                      recurrenceFrequency: undefined,
+                      recurrenceInterval: undefined,
+                      endDate: undefined,
+                    });
+                  }
+                }}
+              />
+            </Form.Item>
+          )}
 
           {isRecurring && (
             <>

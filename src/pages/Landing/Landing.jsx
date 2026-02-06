@@ -229,7 +229,7 @@ export default function Landing() {
               </Button>
             </Space>
             <Text className="hero-note">
-              Sem fidelidade • Após 7 dias, apenas R$ 79,90/mês
+              Sem fidelidade • Após 7 dias, apenas R$ 49,90/mês
             </Text>
           </div>
           <div className="hero-visual">
@@ -365,7 +365,7 @@ export default function Landing() {
                 Comece a transformar seu consultório hoje
               </Title>
               <Paragraph className="cta-description">
-                Teste todas as funcionalidades por 7 dias sem compromisso. Após o período de teste, a assinatura é de apenas R$ 79,90/mês.
+                Teste todas as funcionalidades por 7 dias sem compromisso. Após o período de teste, a assinatura é de apenas R$49,90/mês.
               </Paragraph>
               <div className="trust-stats">
                 <Text strong style={{ fontSize: '20px', color: '#1677ff' }}>
