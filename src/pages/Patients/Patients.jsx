@@ -150,7 +150,7 @@ export default function Patients() {
         style={{ maxWidth: 700 }}
         styles={{
           body: {
-            maxHeight: "250px",
+            maxHeight: "450px",
             overflowY: "auto",
             paddingRight: 12,
           },
