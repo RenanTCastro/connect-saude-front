@@ -153,8 +153,8 @@ export default function PatientDetails() {
             <p><Text strong>Nome:</Text> {patient?.full_name}</p>
             <p><Text strong>Número do paciente:</Text> {patient?.patient_number}</p>
             <p><Text strong>CPF:</Text> {formatCPF(patient?.cpf)}</p>
-            <p><Text strong>Data de nascimento:</Text> {dayjs(patient?.birth_date).format("DD/MM/YYYY")}</p>
-            <p><Text strong>Idade:</Text> {patient?.age} anos</p>
+            <p><Text strong>Data de nascimento:</Text> {formatBirthDate(patient?.birth_date)}</p> 
+           <p><Text strong>Idade:</Text> {patient?.age} anos</p>
             <p><Text strong>Sexo:</Text> {patient?.gender}</p>
             <p><Text strong>Celular:</Text> {formatPhone(patient?.phone)}</p>
             <p><Text strong>CEP:</Text> {patient?.zip_code || "-"}</p>
@@ -430,3 +430,10 @@ function formatPhone(phone) {
     return `+55 (${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
   return phone;
 }
+
+const formatBirthDate = (dateString) => {
+  if (!dateString) return "-";
+  const dateOnly = dateString.split('T')[0];
+  const [year, month, day] = dateOnly.split('-');
+  return `${day}/${month}/${year}`;
+};
