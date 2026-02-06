@@ -907,6 +907,8 @@ export default function CashFlow() {
               style={{ width: "100%" }}
               prefix="R$"
               placeholder="0,00"
+              decimalSeparator=","
+              thousandSeparator="."
             />
           </Form.Item>
 
@@ -1073,6 +1075,8 @@ export default function CashFlow() {
               style={{ width: "100%" }}
               prefix="R$"
               placeholder="0,00"
+              decimalSeparator=","
+              thousandSeparator="."
             />
           </Form.Item>
 
