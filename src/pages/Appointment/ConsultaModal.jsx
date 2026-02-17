@@ -154,8 +154,9 @@ const ConsultaModal = ({
         <Form.Item
           name="send_confirmation"
           valuePropName="checked"
+          label="Enviar confirmação e lembrete automático"
         >
-          <Switch /> Enviar confirmação e lembrete automático
+          <Switch />
         </Form.Item>
 
         <Form.Item
