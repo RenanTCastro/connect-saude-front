@@ -49,11 +49,16 @@ export default function Register() {
       >
         <Form.Item
           name="name"
-          rules={[{ required: true, message: "Por favor, insira seu nome!" }]}
+          rules={[{ required: true, message: "Por favor, insira o nome que será exibido para os pacientes!"  }]}
+          extra={
+            <span className="register-extra-text">
+              Nome usado nos lembretes via WhatsApp para seus clientes.
+            </span>
+          }
         >
           <Input
             prefix={<UserOutlined />}
-            placeholder="Digite seu nome"
+            placeholder="Nome do profissional ou clínica" 
           />
         </Form.Item>
 

@@ -29,3 +29,8 @@
   transition: all 0.3s;
   outline: none;
 }
+
+.register-extra-text {
+  font-size: 12px;
+  line-height: 1.4;
+}
