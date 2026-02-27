@@ -10,6 +10,8 @@ import {
   Alert,
   Divider,
   Modal,
+  Form,
+  Input,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -31,10 +33,15 @@ export default function Settings() {
   const [processing, setProcessing] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [form] = Form.useForm();
 
   // Verificar status da assinatura ao carregar
   useEffect(() => {
     fetchSubscriptionStatus();
+    fetchProfile();
     
     // Verificar se veio redirecionado do Stripe
     const urlParams = new URLSearchParams(window.location.search);
@@ -65,6 +72,46 @@ export default function Settings() {
       messageApi.error("Erro ao buscar status da assinatura");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      setProfileLoading(true);
+      const res = await api.get("/me");
+      setProfile(res.data);
+      if (res.data?.name) {
+        form.setFieldsValue({
+          name: res.data.name,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      messageApi.error("Erro ao buscar dados do perfil");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async (values) => {
+    try {
+      setSavingProfile(true);
+      const res = await api.put("/me", {
+        name: values.name,
+      });
+
+      if (res.data?.user) {
+        setProfile(res.data.user);
+      }
+
+      messageApi.success(res.data?.message || "Informações atualizadas com sucesso!");
+    } catch (err) {
+      console.error(err);
+      const errorMessage =
+        err.response?.data?.error || "Erro ao atualizar informações do perfil";
+      messageApi.error(errorMessage);
+    } finally {
+      setSavingProfile(false);
     }
   };
 
@@ -393,6 +440,51 @@ export default function Settings() {
               </Paragraph>
             </Space>
           </>
+        )}
+      </Card>
+
+      <Card
+        title="Informações do profissional / clínica"
+        style={{ marginBottom: "24px" }}
+      >
+        <Paragraph type="secondary" style={{ marginBottom: "16px" }}>
+          Este nome será usado nos lembretes enviados via WhatsApp para seus clientes.
+        </Paragraph>
+
+        {profileLoading ? (
+          <div style={{ textAlign: "center", padding: "16px" }}>
+            <Spin />
+          </div>
+        ) : (
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleUpdateProfile}
+            initialValues={{
+              name: profile?.name,
+            }}
+          >
+            <Form.Item
+              name="name"
+              label="Nome do profissional ou clínica"
+              rules={[
+                {
+                  required: true,
+                  message: "Por favor, insira o nome que será exibido para os pacientes!",
+                },
+              ]}
+            >
+              <Input placeholder="Nome do profissional ou clínica" maxLength={200} />
+            </Form.Item>
+
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={savingProfile}
+            >
+              Salvar alterações
+            </Button>
+          </Form>
         )}
       </Card>
     </div>
