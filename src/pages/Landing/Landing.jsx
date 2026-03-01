@@ -6,7 +6,7 @@ import {
   DollarOutlined,
   ShoppingOutlined,
   InboxOutlined,
-  SettingOutlined,
+  BellOutlined,
   CheckCircleOutlined,
   StarFilled,
   ArrowRightOutlined,
@@ -115,10 +115,10 @@ export default function Landing() {
     },
     {
       id: 6,
-      icon: <SettingOutlined />,
-      title: "Configurações",
+      icon: <BellOutlined />,
+      title: "Lembretes Automáticos",
       description:
-        "Personalize o sistema conforme suas necessidades e preferências da sua clínica.",
+        "Envie lembretes de consulta automaticamente para seus pacientes via WhatsApp. Reduza faltas e melhore a comunicação com sua clínica.",
     },
   ];
 
