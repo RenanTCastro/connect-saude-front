@@ -80,6 +80,12 @@ export default function CashFlow() {
     totalIncome: 0,
     totalExpense: 0,
     netBalance: 0,
+    received: 0, // Recebido
+    toReceive: 0, // A Receber
+    paidExpenses: 0, // Despesas Pagas
+    toPayExpenses: 0, // Despesas a Pagar
+    cashBalance: 0, // Saldo em Caixa
+    projectedBalance: 0, // Saldo Projetado
   });
   
   // Estado de saldo a receber
@@ -130,11 +136,40 @@ export default function CashFlow() {
   };
 
   const calculateStats = (incomeData, expenseData) => {
+    // Receitas
     const totalIncome = incomeData.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const totalExpense = expenseData.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const netBalance = totalIncome - totalExpense;
+    const received = incomeData
+      .filter(item => item.isPaid)
+      .reduce((sum, item) => sum + (item.amount || 0), 0);
+    const toReceive = incomeData
+      .filter(item => !item.isPaid)
+      .reduce((sum, item) => sum + (item.amount || 0), 0);
     
-    setStats({ totalIncome, totalExpense, netBalance });
+    // Despesas
+    const totalExpense = expenseData.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const paidExpenses = expenseData
+      .filter(item => item.isPaid)
+      .reduce((sum, item) => sum + (item.amount || 0), 0);
+    const toPayExpenses = expenseData
+      .filter(item => !item.isPaid)
+      .reduce((sum, item) => sum + (item.amount || 0), 0);
+    
+    // Saldos
+    const netBalance = totalIncome - totalExpense;
+    const cashBalance = received - paidExpenses; // Saldo em Caixa
+    const projectedBalance = totalIncome - totalExpense; // Saldo Projetado
+    
+    setStats({ 
+      totalIncome, 
+      totalExpense, 
+      netBalance,
+      received,
+      toReceive,
+      paidExpenses,
+      toPayExpenses,
+      cashBalance,
+      projectedBalance,
+    });
   };
 
   const calculateReceivableStats = (installments) => {
@@ -517,8 +552,8 @@ export default function CashFlow() {
       // Se for uma parcela (ID começa com "installment_"), usar endpoint de parcelas
       if (typeof record.id === 'string' && record.id.startsWith('installment_')) {
         const installmentId = record.id.replace('installment_', '');
-        await api.put(`/cashflow/installments/${installmentId}/pay`);
-        messageApi.success("Parcela marcada como paga!");
+        const res = await api.put(`/cashflow/installments/${installmentId}/pay`);
+        messageApi.success(res.data.message);
       } else {
         // Se for transaction simples, usar endpoint de transactions
         const res = await api.put(`/cashflow/transactions/${record.id}/toggle-paid?type=${type}`);
@@ -810,14 +845,75 @@ export default function CashFlow() {
             </Space>
           </div>
 
+          {/* Receitas */}
           <Row gutter={16} style={{ marginBottom: 24 }}>
             <Col xs={24} sm={8}>
               <Card>
                 <Space direction="vertical" style={{ width: "100%" }}>
                   <ArrowUpOutlined style={{ fontSize: 24, color: "#52c41a" }} />
-                  <Text type="secondary">Total de Receitas</Text>
+                  <Text type="secondary">Receita Total</Text>
                   <Title level={3} style={{ margin: 0, color: "#52c41a" }}>
                     R$ {stats.totalIncome.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Title>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  <CheckCircleOutlined style={{ fontSize: 24, color: "#52c41a" }} />
+                  <Text type="secondary">Recebido</Text>
+                  <Title level={3} style={{ margin: 0, color: "#52c41a" }}>
+                    R$ {stats.received.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Title>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  <ArrowUpOutlined style={{ fontSize: 24, color: "#1890ff" }} />
+                  <Text type="secondary">A Receber</Text>
+                  <Title level={3} style={{ margin: 0, color: "#1890ff" }}>
+                    R$ {stats.toReceive.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Title>
+                </Space>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Despesas */}
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  <CheckCircleOutlined style={{ fontSize: 24, color: "#ff4d4f" }} />
+                  <Text type="secondary">Despesas Pagas</Text>
+                  <Title level={3} style={{ margin: 0, color: "#ff4d4f" }}>
+                    R$ {stats.paidExpenses.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Title>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} sm={8}>
+              <Card>
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  <ArrowDownOutlined style={{ fontSize: 24, color: "#faad14" }} />
+                  <Text type="secondary">Despesas a Pagar</Text>
+                  <Title level={3} style={{ margin: 0, color: "#faad14" }}>
+                    R$ {stats.toPayExpenses.toLocaleString("pt-BR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
@@ -839,24 +935,53 @@ export default function CashFlow() {
                 </Space>
               </Card>
             </Col>
-            <Col xs={24} sm={8}>
+          </Row>
+
+          {/* Saldos */}
+          <Row gutter={16} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={12}>
               <Card>
                 <Space direction="vertical" style={{ width: "100%" }}>
                   <DollarOutlined
                     style={{
                       fontSize: 24,
-                      color: stats.netBalance >= 0 ? "#52c41a" : "#ff4d4f",
+                      color: stats.cashBalance >= 0 ? "#52c41a" : "#ff4d4f",
                     }}
                   />
-                  <Text type="secondary">Saldo Líquido</Text>
+                  <Text type="secondary">Saldo em Caixa</Text>
                   <Title
                     level={3}
                     style={{
                       margin: 0,
-                      color: stats.netBalance >= 0 ? "#52c41a" : "#ff4d4f",
+                      color: stats.cashBalance >= 0 ? "#52c41a" : "#ff4d4f",
                     }}
                   >
-                    R$ {stats.netBalance.toLocaleString("pt-BR", {
+                    R$ {stats.cashBalance.toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </Title>
+                </Space>
+              </Card>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Card>
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  <DollarOutlined
+                    style={{
+                      fontSize: 24,
+                      color: stats.projectedBalance >= 0 ? "#52c41a" : "#ff4d4f",
+                    }}
+                  />
+                  <Text type="secondary">Saldo Projetado</Text>
+                  <Title
+                    level={3}
+                    style={{
+                      margin: 0,
+                      color: stats.projectedBalance >= 0 ? "#52c41a" : "#ff4d4f",
+                    }}
+                  >
+                    R$ {stats.projectedBalance.toLocaleString("pt-BR", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
