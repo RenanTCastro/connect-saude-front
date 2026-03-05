@@ -17,6 +17,7 @@ import {
   message,
   Row,
   Col,
+  Radio,
 } from "antd";
 import {
   PlusOutlined,
@@ -47,10 +48,20 @@ export default function CashFlow() {
   const [incomeForm] = Form.useForm();
   const [expenseForm] = Form.useForm();
   const [hasInstallments, setHasInstallments] = useState(false);
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [hasInstallmentsExpense, setHasInstallmentsExpense] = useState(false);
   const [editingIncome, setEditingIncome] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState({ open: false, type: null, id: null, title: null });
+  const [isEditingInstallment, setIsEditingInstallment] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState({ 
+    open: false, 
+    type: null, 
+    id: null, 
+    title: null,
+    isInstallment: false,
+    installmentNumber: null,
+    transactionId: null,
+    deleteOption: "all" // "single", "from-this", "all"
+  });
   
   // Estados para filtros e dados
   const [dateRange, setDateRange] = useState([
@@ -191,27 +202,45 @@ export default function CashFlow() {
   const handleIncomeSubmit = async (values) => {
     try {
       setLoading(true);
-      const formData = {
-        ...values,
-        dueDate: values.dueDate?.format("YYYY-MM-DD"),
-        firstInstallmentDate: values.firstInstallmentDate?.format("YYYY-MM-DD"),
-      };
-      
-      if (values.hasInstallments) {
-        formData.installments = {
-          count: values.installmentCount,
-          firstDate: formData.firstInstallmentDate,
-          interval: values.installmentInterval,
-          intervalType: values.intervalType,
-        };
-      }
       
       if (editingIncome) {
         // Editar receita existente
-        await api.put(`/cashflow/income/${editingIncome.id}`, formData);
-        messageApi.success("Receita atualizada com sucesso!");
+        if (isEditingInstallment) {
+          // Para parcelas, enviar apenas os campos permitidos
+          const formData = {
+            title: values.title,
+            description: values.description,
+            paymentType: values.paymentType,
+            patientId: values.patientId,
+          };
+          await api.put(`/cashflow/income/${editingIncome.id}`, formData);
+          messageApi.success("Receita parcelada atualizada com sucesso!");
+        } else {
+          // Para receitas simples, enviar todos os campos
+          const formData = {
+            ...values,
+            dueDate: values.dueDate?.format("YYYY-MM-DD"),
+          };
+          await api.put(`/cashflow/income/${editingIncome.id}`, formData);
+          messageApi.success("Receita atualizada com sucesso!");
+        }
       } else {
         // Criar nova receita
+        const formData = {
+          ...values,
+          dueDate: values.dueDate?.format("YYYY-MM-DD"),
+          firstInstallmentDate: values.firstInstallmentDate?.format("YYYY-MM-DD"),
+        };
+        
+        if (values.hasInstallments) {
+          formData.installments = {
+            count: values.installmentCount,
+            firstDate: formData.firstInstallmentDate,
+            interval: 1, // Intervalo fixo de 1
+            intervalType: values.intervalType,
+          };
+        }
+        
         await api.post("/cashflow/income", formData);
         messageApi.success("Receita criada com sucesso!");
       }
@@ -220,6 +249,7 @@ export default function CashFlow() {
       incomeForm.resetFields();
       setEditingIncome(null);
       setHasInstallments(false);
+      setIsEditingInstallment(false);
       fetchPeriodData();
     } catch (err) {
       console.error(err);
@@ -230,24 +260,85 @@ export default function CashFlow() {
   };
 
   const handleEditIncome = (record) => {
-    setEditingIncome(record);
-    incomeForm.setFieldsValue({
-      title: record.title || "",
-      description: record.description || "",
-      amount: record.amount,
-      dueDate: record.dueDate ? dayjs(record.dueDate) : null,
-      patientId: record.patientId || undefined,
-      paymentType: record.paymentType,
-    });
+    // Verificar se é uma parcela
+    const isInstallment = typeof record.id === 'string' && record.id.startsWith('installment_');
+    
+    if (isInstallment) {
+      // Para parcelas, usar o transactionId e mostrar apenas campos permitidos
+      if (!record.transactionId) {
+        messageApi.warning("Não foi possível encontrar a receita principal.");
+        return;
+      }
+      
+      // Remover o sufixo de parcela do título (ex: "Consulta (1/3)" -> "Consulta")
+      const cleanTitle = record.title?.replace(/\s*\(\d+\/\d+\)$/, '') || "";
+      
+      setEditingIncome({
+        id: record.transactionId,
+        title: cleanTitle,
+        description: record.description || "",
+        patientId: record.patientId || undefined,
+        paymentType: record.paymentType,
+      });
+      setIsEditingInstallment(true);
+      
+      incomeForm.setFieldsValue({
+        title: cleanTitle,
+        description: record.description || "",
+        patientId: record.patientId || undefined,
+        paymentType: record.paymentType,
+      });
+    } else {
+      // Para receitas simples, mostrar todos os campos
+      setEditingIncome(record);
+      setIsEditingInstallment(false);
+      
+      incomeForm.setFieldsValue({
+        title: record.title || "",
+        description: record.description || "",
+        amount: record.amount,
+        dueDate: record.dueDate ? dayjs(record.dueDate) : null,
+        patientId: record.patientId || undefined,
+        paymentType: record.paymentType,
+      });
+    }
+    
     setIsIncomeModalOpen(true);
   };
 
   const handleDeleteIncome = async () => {
     try {
       setLoading(true);
-      await api.delete(`/cashflow/income/${deleteConfirm.id}`);
-      messageApi.success("Receita deletada com sucesso!");
-      setDeleteConfirm({ open: false, type: null, id: null, title: null });
+      
+      // Se for uma parcela, usar o endpoint de parcelas com a opção escolhida
+      if (deleteConfirm.isInstallment) {
+        const installmentId = deleteConfirm.id.replace('installment_', '');
+        await api.delete(`/cashflow/installments/${installmentId}`, {
+          params: { option: deleteConfirm.deleteOption }
+        });
+        messageApi.success(
+          deleteConfirm.deleteOption === "single" 
+            ? "Parcela deletada com sucesso!"
+            : deleteConfirm.deleteOption === "from-this"
+            ? "Parcela e próximas deletadas com sucesso!"
+            : "Toda a recorrência deletada com sucesso!"
+        );
+      } else {
+        // Se for receita simples, deletar normalmente
+        await api.delete(`/cashflow/income/${deleteConfirm.id}`);
+        messageApi.success("Receita deletada com sucesso!");
+      }
+      
+      setDeleteConfirm({ 
+        open: false, 
+        type: null, 
+        id: null, 
+        title: null,
+        isInstallment: false,
+        installmentNumber: null,
+        transactionId: null,
+        deleteOption: "all"
+      });
       fetchPeriodData();
     } catch (err) {
       console.error(err);
@@ -261,26 +352,44 @@ export default function CashFlow() {
   const handleExpenseSubmit = async (values) => {
     try {
       setLoading(true);
-      const formData = {
-        ...values,
-        dueDate: values.dueDate?.format("YYYY-MM-DD"),
-        endDate: values.endDate?.format("YYYY-MM-DD"),
-      };
-      
-      if (values.isRecurring) {
-        formData.recurrence = {
-          frequency: values.recurrenceFrequency,
-          interval: values.recurrenceInterval,
-          endDate: formData.endDate,
-        };
-      }
       
       if (editingExpense) {
         // Editar despesa existente
-        await api.put(`/cashflow/expense/${editingExpense.id}`, formData);
-        messageApi.success("Despesa atualizada com sucesso!");
+        if (isEditingInstallment) {
+          // Para parcelas, enviar apenas os campos permitidos
+          const formData = {
+            title: values.title,
+            description: values.description,
+            paymentType: values.paymentType,
+          };
+          await api.put(`/cashflow/expense/${editingExpense.id}`, formData);
+          messageApi.success("Despesa parcelada atualizada com sucesso!");
+        } else {
+          // Para despesas simples, enviar todos os campos
+          const formData = {
+            ...values,
+            dueDate: values.dueDate?.format("YYYY-MM-DD"),
+          };
+          await api.put(`/cashflow/expense/${editingExpense.id}`, formData);
+          messageApi.success("Despesa atualizada com sucesso!");
+        }
       } else {
         // Criar nova despesa
+        const formData = {
+          ...values,
+          dueDate: values.dueDate?.format("YYYY-MM-DD"),
+          firstInstallmentDate: values.firstInstallmentDate?.format("YYYY-MM-DD"),
+        };
+        
+        if (values.hasInstallments) {
+          formData.installments = {
+            count: values.installmentCount,
+            firstDate: formData.firstInstallmentDate,
+            interval: 1, // Intervalo fixo de 1
+            intervalType: values.intervalType,
+          };
+        }
+        
         await api.post("/cashflow/expense", formData);
         messageApi.success("Despesa criada com sucesso!");
       }
@@ -288,7 +397,8 @@ export default function CashFlow() {
       setIsExpenseModalOpen(false);
       expenseForm.resetFields();
       setEditingExpense(null);
-      setIsRecurring(false);
+      setHasInstallmentsExpense(false);
+      setIsEditingInstallment(false);
       fetchPeriodData();
     } catch (err) {
       console.error(err);
@@ -299,29 +409,82 @@ export default function CashFlow() {
   };
 
   const handleEditExpense = (record) => {
-    setEditingExpense(record);
-    const recurrence = record.recurrence ? (typeof record.recurrence === 'string' ? JSON.parse(record.recurrence) : record.recurrence) : null;
-    expenseForm.setFieldsValue({
-      title: record.title || "",
-      description: record.description || "",
-      amount: record.amount,
-      dueDate: record.dueDate ? dayjs(record.dueDate) : null,
-      paymentType: record.paymentType,
-      isRecurring: !!recurrence,
-      recurrenceFrequency: recurrence?.frequency,
-      recurrenceInterval: recurrence?.interval,
-      endDate: recurrence?.endDate ? dayjs(recurrence.endDate) : null,
-    });
-    setIsRecurring(!!recurrence);
+    // Verificar se é uma parcela
+    const isInstallment = typeof record.id === 'string' && record.id.startsWith('installment_');
+    
+    if (isInstallment) {
+      // Para parcelas, usar o transactionId e mostrar apenas campos permitidos
+      if (!record.transactionId) {
+        messageApi.warning("Não foi possível encontrar a despesa principal.");
+        return;
+      }
+      
+      // Remover o sufixo de parcela do título (ex: "Aluguel (1/3)" -> "Aluguel")
+      const cleanTitle = record.title?.replace(/\s*\(\d+\/\d+\)$/, '') || "";
+      
+      setEditingExpense({
+        id: record.transactionId,
+        title: cleanTitle,
+        description: record.description || "",
+        paymentType: record.paymentType,
+      });
+      setIsEditingInstallment(true);
+      
+      expenseForm.setFieldsValue({
+        title: cleanTitle,
+        description: record.description || "",
+        paymentType: record.paymentType,
+      });
+    } else {
+      // Para despesas simples, mostrar todos os campos
+      setEditingExpense(record);
+      setIsEditingInstallment(false);
+      
+      expenseForm.setFieldsValue({
+        title: record.title || "",
+        description: record.description || "",
+        amount: record.amount,
+        dueDate: record.dueDate ? dayjs(record.dueDate) : null,
+        paymentType: record.paymentType,
+      });
+    }
+    
     setIsExpenseModalOpen(true);
   };
 
   const handleDeleteExpense = async () => {
     try {
       setLoading(true);
-      await api.delete(`/cashflow/expense/${deleteConfirm.id}`);
-      messageApi.success("Despesa deletada com sucesso!");
-      setDeleteConfirm({ open: false, type: null, id: null, title: null });
+      
+      // Se for uma parcela, usar o endpoint de parcelas com a opção escolhida
+      if (deleteConfirm.isInstallment) {
+        const installmentId = deleteConfirm.id.replace('installment_', '');
+        await api.delete(`/cashflow/installments/${installmentId}`, {
+          params: { option: deleteConfirm.deleteOption }
+        });
+        messageApi.success(
+          deleteConfirm.deleteOption === "single" 
+            ? "Parcela deletada com sucesso!"
+            : deleteConfirm.deleteOption === "from-this"
+            ? "Parcela e próximas deletadas com sucesso!"
+            : "Toda a recorrência deletada com sucesso!"
+        );
+      } else {
+        // Se for despesa simples, deletar normalmente
+        await api.delete(`/cashflow/expense/${deleteConfirm.id}`);
+        messageApi.success("Despesa deletada com sucesso!");
+      }
+      
+      setDeleteConfirm({ 
+        open: false, 
+        type: null, 
+        id: null, 
+        title: null,
+        isInstallment: false,
+        installmentNumber: null,
+        transactionId: null,
+        deleteOption: "all"
+      });
       fetchPeriodData();
     } catch (err) {
       console.error(err);
@@ -350,8 +513,18 @@ export default function CashFlow() {
   const handleTogglePaidStatus = async (record, type) => {
     try {
       setLoading(true);
-      const res = await api.put(`/cashflow/transactions/${record.id}/toggle-paid?type=${type}`);
-      messageApi.success(res.data.message);
+      
+      // Se for uma parcela (ID começa com "installment_"), usar endpoint de parcelas
+      if (typeof record.id === 'string' && record.id.startsWith('installment_')) {
+        const installmentId = record.id.replace('installment_', '');
+        await api.put(`/cashflow/installments/${installmentId}/pay`);
+        messageApi.success("Parcela marcada como paga!");
+      } else {
+        // Se for transaction simples, usar endpoint de transactions
+        const res = await api.put(`/cashflow/transactions/${record.id}/toggle-paid?type=${type}`);
+        messageApi.success(res.data.message);
+      }
+      
       fetchPeriodData();
     } catch (err) {
       console.error(err);
@@ -419,27 +592,43 @@ export default function CashFlow() {
     {
       title: "Ações",
       key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="default"
-            icon={<EditOutlined />}
-            onClick={() => handleEditIncome(record)}
-            size="small"
-          >
-            Editar
-          </Button>
-          <Button
-            type="primary"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => setDeleteConfirm({ open: true, type: "income", id: record.id, title: record.title })}
-            size="small"
-          >
-            Excluir
-          </Button>
-        </Space>
-      ),
+      render: (_, record) => {
+        const isInstallment = typeof record.id === 'string' && record.id.startsWith('installment_');
+        return (
+          <Space>
+            <Button
+              type="default"
+              icon={<EditOutlined />}
+              onClick={() => handleEditIncome(record)}
+              size="small"
+              title={isInstallment ? "Editar receita parcelada (apenas alguns campos)" : "Editar"}
+            >
+              Editar
+            </Button>
+            <Button
+              type="primary"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                const isInstallment = typeof record.id === 'string' && record.id.startsWith('installment_');
+                setDeleteConfirm({ 
+                  open: true, 
+                  type: "income", 
+                  id: record.id, 
+                  title: record.title,
+                  isInstallment: isInstallment,
+                  installmentNumber: record.installmentNumber || null,
+                  transactionId: record.transactionId || null,
+                  deleteOption: isInstallment ? "single" : "all"
+                });
+              }}
+              size="small"
+            >
+              Excluir
+            </Button>
+          </Space>
+        );
+      },
       align: "right",
     },
   ];
@@ -497,27 +686,43 @@ export default function CashFlow() {
     {
       title: "Ações",
       key: "actions",
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="default"
-            icon={<EditOutlined />}
-            onClick={() => handleEditExpense(record)}
-            size="small"
-          >
-            Editar
-          </Button>
-          <Button
-            type="primary"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => setDeleteConfirm({ open: true, type: "expense", id: record.id, title: record.title })}
-            size="small"
-          >
-            Excluir
-          </Button>
-        </Space>
-      ),
+      render: (_, record) => {
+        const isInstallment = typeof record.id === 'string' && record.id.startsWith('installment_');
+        return (
+          <Space>
+            <Button
+              type="default"
+              icon={<EditOutlined />}
+              onClick={() => handleEditExpense(record)}
+              size="small"
+              title={isInstallment ? "Editar despesa parcelada (apenas alguns campos)" : "Editar"}
+            >
+              Editar
+            </Button>
+            <Button
+              type="primary"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                const isInstallment = typeof record.id === 'string' && record.id.startsWith('installment_');
+                setDeleteConfirm({ 
+                  open: true, 
+                  type: "expense", 
+                  id: record.id, 
+                  title: record.title,
+                  isInstallment: isInstallment,
+                  installmentNumber: record.installmentNumber || null,
+                  transactionId: record.transactionId || null,
+                  deleteOption: isInstallment ? "single" : "all"
+                });
+              }}
+              size="small"
+            >
+              Excluir
+            </Button>
+          </Space>
+        );
+      },
       align: "right",
     },
   ];
@@ -852,20 +1057,63 @@ export default function CashFlow() {
             handleDeleteExpense();
           }
         }}
-        onCancel={() => setDeleteConfirm({ open: false, type: null, id: null, title: null })}
+        onCancel={() => setDeleteConfirm({ 
+          open: false, 
+          type: null, 
+          id: null, 
+          title: null,
+          isInstallment: false,
+          installmentNumber: null,
+          transactionId: null,
+          deleteOption: "all"
+        })}
         okText="Sim, excluir"
         cancelText="Cancelar"
         okButtonProps={{ danger: true }}
         confirmLoading={loading}
       >
-        <p>
-          Tem certeza que deseja excluir {deleteConfirm.type === "income" ? "a receita" : "a despesa"} <strong>{deleteConfirm.title}</strong>?
-        </p>
+        <div>
+          <p style={{ marginBottom: 16 }}>
+            Tem certeza que deseja excluir {deleteConfirm.type === "income" ? "a receita" : "a despesa"} <strong>{deleteConfirm.title}</strong>?
+          </p>
+          
+          {deleteConfirm.isInstallment && (
+            <div>
+              <p style={{ marginBottom: 12, fontWeight: 500 }}>O que você deseja excluir?</p>
+              <Radio.Group
+                value={deleteConfirm.deleteOption}
+                onChange={(e) => setDeleteConfirm({ ...deleteConfirm, deleteOption: e.target.value })}
+                style={{ width: "100%" }}
+              >
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  <Radio value="single">
+                    <strong>Apenas esta parcela</strong>
+                    <div style={{ marginLeft: 24, fontSize: 12, color: "#8c8c8c" }}>
+                      Remove apenas a parcela selecionada
+                    </div>
+                  </Radio>
+                  <Radio value="from-this">
+                    <strong>Esta e as próximas</strong>
+                    <div style={{ marginLeft: 24, fontSize: 12, color: "#8c8c8c" }}>
+                      Remove esta parcela e todas as parcelas futuras
+                    </div>
+                  </Radio>
+                  <Radio value="all">
+                    <strong>Toda a recorrência</strong>
+                    <div style={{ marginLeft: 24, fontSize: 12, color: "#8c8c8c" }}>
+                      Remove todas as parcelas desta receita
+                    </div>
+                  </Radio>
+                </Space>
+              </Radio.Group>
+            </div>
+          )}
+        </div>
       </Modal>
 
       {/* Modal de Nova/Editar Receita */}
       <Modal
-        title={editingIncome ? "Editar Receita" : "Nova Receita"}
+        title={editingIncome ? (isEditingInstallment ? "Editar Receita Parcelada" : "Editar Receita") : "Nova Receita"}
         open={isIncomeModalOpen}
         onOk={() => incomeForm.submit()}
         onCancel={() => {
@@ -873,6 +1121,7 @@ export default function CashFlow() {
           incomeForm.resetFields();
           setHasInstallments(false);
           setEditingIncome(null);
+          setIsEditingInstallment(false);
         }}
         okText={editingIncome ? "Salvar" : "Criar"}
         cancelText="Cancelar"
@@ -896,33 +1145,51 @@ export default function CashFlow() {
             <TextArea rows={3} placeholder="Descrição da receita" />
           </Form.Item>
 
-          <Form.Item
-            name="amount"
-            label="Valor"
-            rules={[{ required: true, message: "Informe o valor!" }]}
-          >
-            <InputNumber
-              min={0}
-              step={0.01}
-              style={{ width: "100%" }}
-              prefix="R$"
-              placeholder="0,00"
-              decimalSeparator=","
-              thousandSeparator="."
-            />
-          </Form.Item>
+          {!isEditingInstallment && (
+            <>
+              <Form.Item
+                name="amount"
+                label="Valor"
+                rules={[{ required: true, message: "Informe o valor!" }]}
+              >
+                <InputNumber
+                  min={0}
+                  step={0.01}
+                  style={{ width: "100%" }}
+                  prefix="R$"
+                  placeholder="0,00"
+                  decimalSeparator=","
+                  thousandSeparator="."
+                />
+              </Form.Item>
 
-          <Form.Item
-            name="dueDate"
-            label="Data de Vencimento"
-            rules={[{ required: !hasInstallments, message: "Informe a data de vencimento!" }]}
-          >
-            <DatePicker
-              style={{ width: "100%" }}
-              format="DD/MM/YYYY"
-              disabled={hasInstallments}
-            />
-          </Form.Item>
+              <Form.Item
+                name="dueDate"
+                label="Data de Vencimento"
+                rules={[{ required: !hasInstallments, message: "Informe a data de vencimento!" }]}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  disabled={hasInstallments}
+                />
+              </Form.Item>
+            </>
+          )}
+
+          {isEditingInstallment && (
+            <div style={{ 
+              padding: "12px", 
+              backgroundColor: "#f0f0f0", 
+              borderRadius: "4px",
+              marginBottom: "16px"
+            }}>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                <strong>Nota:</strong> Ao editar uma receita parcelada, você pode alterar apenas o título, descrição, tipo de pagamento e paciente. 
+                O valor e as datas das parcelas não podem ser alterados.
+              </Text>
+            </div>
+          )}
 
           <Form.Item name="patientId" label="Paciente">
             <Select
@@ -954,7 +1221,7 @@ export default function CashFlow() {
             </Select>
           </Form.Item>
 
-          {!editingIncome && (
+          {!editingIncome && !isEditingInstallment && (
             <Form.Item name="hasInstallments" valuePropName="checked">
               <Switch 
                 checkedChildren="Parcelado" 
@@ -966,7 +1233,6 @@ export default function CashFlow() {
                       installmentCount: undefined,
                       firstInstallmentDate: undefined,
                       intervalType: undefined,
-                      installmentInterval: undefined,
                     });
                   }
                 }}
@@ -974,7 +1240,7 @@ export default function CashFlow() {
             </Form.Item>
           )}
 
-          {hasInstallments && !editingIncome && (
+          {hasInstallments && !editingIncome && !isEditingInstallment && (
             <>
               <Form.Item
                 name="installmentCount"
@@ -1004,7 +1270,7 @@ export default function CashFlow() {
 
               <Form.Item
                 name="intervalType"
-                label="Intervalo"
+                label="Intervalo entre Parcelas"
                 rules={[{ required: true, message: "Selecione o intervalo!" }]}
               >
                 <Select placeholder="Selecione o intervalo">
@@ -1013,19 +1279,6 @@ export default function CashFlow() {
                   <Option value="monthly">Mensal</Option>
                 </Select>
               </Form.Item>
-
-              <Form.Item
-                name="installmentInterval"
-                label="Quantidade do Intervalo"
-                rules={[
-                  {
-                    required: true,
-                    message: "Informe a quantidade do intervalo!",
-                  },
-                ]}
-              >
-                <InputNumber min={1} style={{ width: "100%" }} />
-              </Form.Item>
             </>
           )}
         </Form>
@@ -1033,14 +1286,15 @@ export default function CashFlow() {
 
       {/* Modal de Nova/Editar Despesa */}
       <Modal
-        title={editingExpense ? "Editar Despesa" : "Nova Despesa"}
+        title={editingExpense ? (isEditingInstallment ? "Editar Despesa Parcelada" : "Editar Despesa") : "Nova Despesa"}
         open={isExpenseModalOpen}
         onOk={() => expenseForm.submit()}
         onCancel={() => {
           setIsExpenseModalOpen(false);
           expenseForm.resetFields();
-          setIsRecurring(false);
+          setHasInstallmentsExpense(false);
           setEditingExpense(null);
+          setIsEditingInstallment(false);
         }}
         okText={editingExpense ? "Salvar" : "Criar"}
         cancelText="Cancelar"
@@ -1064,29 +1318,51 @@ export default function CashFlow() {
             <TextArea rows={3} placeholder="Descrição da despesa" />
           </Form.Item>
 
-          <Form.Item
-            name="amount"
-            label="Valor"
-            rules={[{ required: true, message: "Informe o valor!" }]}
-          >
-            <InputNumber
-              min={0}
-              step={0.01}
-              style={{ width: "100%" }}
-              prefix="R$"
-              placeholder="0,00"
-              decimalSeparator=","
-              thousandSeparator="."
-            />
-          </Form.Item>
+          {!isEditingInstallment && (
+            <>
+              <Form.Item
+                name="amount"
+                label="Valor"
+                rules={[{ required: true, message: "Informe o valor!" }]}
+              >
+                <InputNumber
+                  min={0}
+                  step={0.01}
+                  style={{ width: "100%" }}
+                  prefix="R$"
+                  placeholder="0,00"
+                  decimalSeparator=","
+                  thousandSeparator="."
+                />
+              </Form.Item>
 
-          <Form.Item
-            name="dueDate"
-            label="Data de Vencimento"
-            rules={[{ required: true, message: "Informe a data de vencimento!" }]}
-          >
-            <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
-          </Form.Item>
+              <Form.Item
+                name="dueDate"
+                label="Data de Vencimento"
+                rules={[{ required: !hasInstallmentsExpense, message: "Informe a data de vencimento!" }]}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  disabled={hasInstallmentsExpense}
+                />
+              </Form.Item>
+            </>
+          )}
+
+          {isEditingInstallment && (
+            <div style={{ 
+              padding: "12px", 
+              backgroundColor: "#f0f0f0", 
+              borderRadius: "4px",
+              marginBottom: "16px"
+            }}>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                <strong>Nota:</strong> Ao editar uma despesa parcelada, você pode alterar apenas o título, descrição e tipo de pagamento. 
+                O valor e as datas das parcelas não podem ser alterados.
+              </Text>
+            </div>
+          )}
 
           <Form.Item
             name="paymentType"
@@ -1101,18 +1377,18 @@ export default function CashFlow() {
             </Select>
           </Form.Item>
 
-          {!editingExpense && (
-            <Form.Item name="isRecurring" valuePropName="checked">
+          {!editingExpense && !isEditingInstallment && (
+            <Form.Item name="hasInstallments" valuePropName="checked">
               <Switch 
-                checkedChildren="Recorrente" 
-                unCheckedChildren="Única"
+                checkedChildren="Parcelado" 
+                unCheckedChildren="À vista"
                 onChange={(checked) => {
-                  setIsRecurring(checked);
+                  setHasInstallmentsExpense(checked);
                   if (!checked) {
                     expenseForm.setFieldsValue({
-                      recurrenceFrequency: undefined,
-                      recurrenceInterval: undefined,
-                      endDate: undefined,
+                      installmentCount: undefined,
+                      firstInstallmentDate: undefined,
+                      intervalType: undefined,
                     });
                   }
                 }}
@@ -1120,44 +1396,44 @@ export default function CashFlow() {
             </Form.Item>
           )}
 
-          {isRecurring && (
+          {hasInstallmentsExpense && !editingExpense && !isEditingInstallment && (
             <>
               <Form.Item
-                name="recurrenceFrequency"
-                label="Frequência"
+                name="installmentCount"
+                label="Número de Parcelas"
                 rules={[
                   {
                     required: true,
-                    message: "Selecione a frequência!",
+                    message: "Informe o número de parcelas!",
                   },
                 ]}
               >
-                <Select placeholder="Selecione a frequência">
-                  <Option value="daily">Diária</Option>
-                  <Option value="weekly">Semanal</Option>
-                  <Option value="monthly">Mensal</Option>
-                  <Option value="yearly">Anual</Option>
-                </Select>
+                <InputNumber min={2} max={60} style={{ width: "100%" }} />
               </Form.Item>
 
               <Form.Item
-                name="recurrenceInterval"
-                label="Intervalo"
+                name="firstInstallmentDate"
+                label="Data da Primeira Parcela"
                 rules={[
                   {
                     required: true,
-                    message: "Informe o intervalo!",
+                    message: "Informe a data da primeira parcela!",
                   },
                 ]}
-              >
-                <InputNumber min={1} style={{ width: "100%" }} />
-              </Form.Item>
-
-              <Form.Item
-                name="endDate"
-                label="Data Final (Opcional)"
               >
                 <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+              </Form.Item>
+
+              <Form.Item
+                name="intervalType"
+                label="Intervalo entre Parcelas"
+                rules={[{ required: true, message: "Selecione o intervalo!" }]}
+              >
+                <Select placeholder="Selecione o intervalo">
+                  <Option value="daily">Diário</Option>
+                  <Option value="weekly">Semanal</Option>
+                  <Option value="monthly">Mensal</Option>
+                </Select>
               </Form.Item>
             </>
           )}
