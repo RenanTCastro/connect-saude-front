@@ -15,10 +15,12 @@ import {
   DatePicker,
   message,
   Space,
+  Tabs,
 } from "antd";
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../services/api";
+import PatientForm from "../../components/PatientForm/PatientForm";
 import "./Styles.css";
 
 const { Title, Text } = Typography;
@@ -33,6 +35,7 @@ export default function PatientDetails() {
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("info");
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -146,125 +149,144 @@ export default function PatientDetails() {
         </Space>
       </div>
 
-      <Row gutter={16}>
-        <Col xs={24} sm={24} md={12}>
-          <Card title="Dados pessoais">
-            <p><Text strong>Código do paciente:</Text> {patient?.id}</p>
-            <p><Text strong>Nome:</Text> {patient?.full_name}</p>
-            <p><Text strong>Número do paciente:</Text> {patient?.patient_number}</p>
-            <p><Text strong>CPF:</Text> {formatCPF(patient?.cpf)}</p>
-            <p><Text strong>Data de nascimento:</Text> {formatBirthDate(patient?.birth_date)}</p> 
-           <p><Text strong>Idade:</Text> {patient?.age} anos</p>
-            <p><Text strong>Sexo:</Text> {patient?.gender}</p>
-            <p><Text strong>Celular:</Text> {formatPhone(patient?.phone)}</p>
-            <p><Text strong>CEP:</Text> {patient?.zip_code || "-"}</p>
-            <p><Text strong>Endereço:</Text> {patient?.street}</p>
-            <p><Text strong>Bairro:</Text> {patient?.neighborhood}</p>
-            <p><Text strong>Cidade:</Text> {patient?.city} - {patient?.state}</p>
-          </Card>
-        </Col>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: "info",
+            label: "Informações",
+            children: (
+              <>
+                <Row gutter={16}>
+                  <Col xs={24} sm={24} md={12}>
+                    <Card title="Dados pessoais">
+                      <p><Text strong>Código do paciente:</Text> {patient?.id}</p>
+                      <p><Text strong>Nome:</Text> {patient?.full_name}</p>
+                      <p><Text strong>Número do paciente:</Text> {patient?.patient_number}</p>
+                      <p><Text strong>CPF:</Text> {formatCPF(patient?.cpf)}</p>
+                      <p><Text strong>Data de nascimento:</Text> {formatBirthDate(patient?.birth_date)}</p> 
+                     <p><Text strong>Idade:</Text> {patient?.age} anos</p>
+                      <p><Text strong>Sexo:</Text> {patient?.gender}</p>
+                      <p><Text strong>Celular:</Text> {formatPhone(patient?.phone)}</p>
+                      <p><Text strong>CEP:</Text> {patient?.zip_code || "-"}</p>
+                      <p><Text strong>Endereço:</Text> {patient?.street}</p>
+                      <p><Text strong>Bairro:</Text> {patient?.neighborhood}</p>
+                      <p><Text strong>Cidade:</Text> {patient?.city} - {patient?.state}</p>
+                    </Card>
+                  </Col>
 
-        <Col xs={24} sm={24} md={12}>
-          <Card title="Consultas" style={{ maxHeight: 400, overflowY: "auto" }}>
-            {appointments.length === 0 ? (
-              <Text type="secondary">Nenhuma consulta registrada.</Text>
-            ) : (
-              appointments.map((appt) => (
-                <div key={appt.id} style={{ marginBottom: 16 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-                    <div style={{ flex: 1 }}>
-                      <Text strong style={{ display: "block", marginBottom: 4 }}>
-                        {appt.title || "Consulta"}
-                      </Text>
-                      <Text style={{ display: "block", marginBottom: 4 }}>
-                        {dayjs(appt.start_datetime).format("DD/MM/YYYY [às] HH:mm")}
-                      </Text>
-                      {appt.description && (
-                        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-                          {appt.description}
-                        </Text>
+                  <Col xs={24} sm={24} md={12}>
+                    <Card title="Consultas" style={{ maxHeight: 400, overflowY: "auto" }}>
+                      {appointments.length === 0 ? (
+                        <Text type="secondary">Nenhuma consulta registrada.</Text>
+                      ) : (
+                        appointments.map((appt) => (
+                          <div key={appt.id} style={{ marginBottom: 16 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                              <div style={{ flex: 1 }}>
+                                <Text strong style={{ display: "block", marginBottom: 4 }}>
+                                  {appt.title || "Consulta"}
+                                </Text>
+                                <Text style={{ display: "block", marginBottom: 4 }}>
+                                  {dayjs(appt.start_datetime).format("DD/MM/YYYY [às] HH:mm")}
+                                </Text>
+                                {appt.description && (
+                                  <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
+                                    {appt.description}
+                                  </Text>
+                                )}
+                              </div>
+                              <Text 
+                                type={appt.status === "completed" ? "success" : appt.status === "cancelled" ? "danger" : "default"}
+                                style={{ fontSize: 12 }}
+                              >
+                                {appt.status === "scheduled" ? "Agendada" : 
+                                 appt.status === "completed" ? "Finalizada" : 
+                                 appt.status === "cancelled" ? "Cancelada" : 
+                                 appt.status || "Agendada"}
+                              </Text>
+                            </div>
+                            <Button 
+                              type="link" 
+                              style={{ padding: 0 }}
+                              onClick={() => navigate(`/app/appointment`)}
+                            >
+                              Ver na agenda
+                            </Button>
+                            {appt !== appointments[appointments.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
+                          </div>
+                        ))
                       )}
-                    </div>
-                    <Text 
-                      type={appt.status === "completed" ? "success" : appt.status === "cancelled" ? "danger" : "default"}
-                      style={{ fontSize: 12 }}
-                    >
-                      {appt.status === "scheduled" ? "Agendada" : 
-                       appt.status === "completed" ? "Finalizada" : 
-                       appt.status === "cancelled" ? "Cancelada" : 
-                       appt.status || "Agendada"}
-                    </Text>
-                  </div>
-                  <Button 
-                    type="link" 
-                    style={{ padding: 0 }}
-                    onClick={() => navigate(`/app/appointment`)}
-                  >
-                    Ver na agenda
-                  </Button>
-                  {appt !== appointments[appointments.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
-                </div>
-              ))
-            )}
-          </Card>
-        </Col>
-      </Row>
+                    </Card>
+                  </Col>
+                </Row>
 
-      <Divider />
-      <Card title="Faturas" style={{ marginTop: 12, minHeight: 120 }}>
-        {invoices.length === 0 ? (
-          <Text type="secondary">Nenhuma fatura registrada.</Text>
-        ) : (
-          <div style={{ maxHeight: 400, overflowY: "auto" }}>
-            {invoices.map((invoice) => (
-              <div key={invoice.id} style={{ marginBottom: 16, padding: 12, border: "1px solid #f0f0f0", borderRadius: 4 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <Text strong style={{ display: "block", marginBottom: 4 }}>{invoice.title}</Text>
-                    {invoice.description && (
-                      <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-                        {invoice.description}
-                      </Text>
-                    )}
-                    {invoice.installment.total > 1 && (
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        Parcela {invoice.installment.current} de {invoice.installment.total}
-                      </Text>
-                    )}
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <Text strong style={{ fontSize: 16, color: invoice.isPaid ? "#52c41a" : "#ff4d4f", display: "block" }}>
-                      R$ {invoice.amount.toFixed(2).replace(".", ",")}
-                    </Text>
-                    <Text 
-                      type={invoice.isPaid ? "success" : "danger"} 
-                      style={{ fontSize: 12, display: "block", marginTop: 4 }}
-                    >
-                      {invoice.isPaid ? "Paga" : "Pendente"}
-                    </Text>
-                  </div>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8c8c8c" }}>
-                  <Text>
-                    <Text strong>Vencimento:</Text> {dayjs(invoice.dueDate).format("DD/MM/YYYY")}
-                  </Text>
-                  {invoice.paymentDate && (
-                    <Text>
-                      <Text strong>Pagamento:</Text> {dayjs(invoice.paymentDate).format("DD/MM/YYYY")}
-                    </Text>
+                <Divider />
+                <Card title="Faturas" style={{ marginTop: 12, minHeight: 120 }}>
+                  {invoices.length === 0 ? (
+                    <Text type="secondary">Nenhuma fatura registrada.</Text>
+                  ) : (
+                    <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                      {invoices.map((invoice) => (
+                        <div key={invoice.id} style={{ marginBottom: 16, padding: 12, border: "1px solid #f0f0f0", borderRadius: 4 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                            <div style={{ flex: 1 }}>
+                              <Text strong style={{ display: "block", marginBottom: 4 }}>{invoice.title}</Text>
+                              {invoice.description && (
+                                <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
+                                  {invoice.description}
+                                </Text>
+                              )}
+                              {invoice.installment.total > 1 && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Parcela {invoice.installment.current} de {invoice.installment.total}
+                                </Text>
+                              )}
+                            </div>
+                            <div style={{ textAlign: "right" }}>
+                              <Text strong style={{ fontSize: 16, color: invoice.isPaid ? "#52c41a" : "#ff4d4f", display: "block" }}>
+                                R$ {invoice.amount.toFixed(2).replace(".", ",")}
+                              </Text>
+                              <Text 
+                                type={invoice.isPaid ? "success" : "danger"} 
+                                style={{ fontSize: 12, display: "block", marginTop: 4 }}
+                              >
+                                {invoice.isPaid ? "Paga" : "Pendente"}
+                              </Text>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8c8c8c" }}>
+                            <Text>
+                              <Text strong>Vencimento:</Text> {dayjs(invoice.dueDate).format("DD/MM/YYYY")}
+                            </Text>
+                            {invoice.paymentDate && (
+                              <Text>
+                                <Text strong>Pagamento:</Text> {dayjs(invoice.paymentDate).format("DD/MM/YYYY")}
+                              </Text>
+                            )}
+                            {invoice.paymentType && (
+                              <Text>
+                                <Text strong>Forma:</Text> {invoice.paymentType}
+                              </Text>
+                            )}
+                          </div>
+                          {invoice !== invoices[invoices.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
+                        </div>
+                      ))}
+                    </div>
                   )}
-                  {invoice.paymentType && (
-                    <Text>
-                      <Text strong>Forma:</Text> {invoice.paymentType}
-                    </Text>
-                  )}
-                </div>
-                {invoice !== invoices[invoices.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
+                </Card>
+              </>
+            ),
+          },
+          {
+            key: "form",
+            label: "Anamnese",
+            children: <PatientForm patientId={id} formId={1} />,
+          },
+        ]}
+      />
 
       <Modal
         title="Editar Paciente"

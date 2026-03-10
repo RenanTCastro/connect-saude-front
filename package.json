@@ -16,6 +16,7 @@
     "@fullcalendar/list": "^6.1.15",
     "@fullcalendar/react": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
+    "@react-pdf/renderer": "^4.3.2",
     "antd": "^5.28.0",
     "axios": "^1.13.2",
     "date-fns": "^4.1.0",
