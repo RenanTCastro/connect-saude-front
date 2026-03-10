@@ -203,11 +203,16 @@ export default function PatientForm({ patientId, formId = 1 }) {
             <Form.Item name={fieldName} label={question.question} rules={rules}>
               <Radio.Group 
                 onChange={(e) => {
-                  // Mostrar comentário automaticamente quando houver qualquer resposta
-                  if (question.has_comment && e.target.value) {
+                  // Mostrar comentário automaticamente apenas quando resposta for "Sim"
+                  if (question.has_comment && e.target.value === "Sim") {
                     setShowComments(prev => ({
                       ...prev,
                       [question.id_question]: true
+                    }));
+                  } else if (question.has_comment) {
+                    setShowComments(prev => ({
+                      ...prev,
+                      [question.id_question]: false
                     }));
                   }
                 }}
@@ -223,11 +228,16 @@ export default function PatientForm({ patientId, formId = 1 }) {
             <Form.Item name={fieldName} label={question.question} rules={rules}>
               <Radio.Group 
                 onChange={(e) => {
-                  // Mostrar comentário automaticamente quando houver qualquer resposta
-                  if (question.has_comment && e.target.value) {
+                  // Mostrar comentário automaticamente apenas quando resposta for "Sim"
+                  if (question.has_comment && e.target.value === "Sim") {
                     setShowComments(prev => ({
                       ...prev,
                       [question.id_question]: true
+                    }));
+                  } else if (question.has_comment) {
+                    setShowComments(prev => ({
+                      ...prev,
+                      [question.id_question]: false
                     }));
                   }
                 }}
@@ -285,11 +295,15 @@ export default function PatientForm({ patientId, formId = 1 }) {
           }>
             {({ getFieldValue }) => {
               const answerValue = getFieldValue(fieldName);
-              const hasAnswer = answerValue !== undefined && answerValue !== null && answerValue !== "";
               const isCommentVisible = showComments[question.id_question] !== false;
 
-              // Para questões de escolha (yes_no/yes_no_unknown), mostrar comentário se houver resposta
-              if (isChoiceType && hasAnswer) {
+              // Para sim/não, só exibir bloco de comentário quando a resposta for "Sim"
+              if (isChoiceType && answerValue !== "Sim") {
+                return null;
+              }
+
+              // Para outros tipos de questão, sempre mostrar o comentário se has_comment for true
+              if (!isChoiceType || answerValue === "Sim") {
                 return (
                   <div style={{ marginTop: 8 }}>
                     {isCommentVisible ? (
@@ -329,26 +343,6 @@ export default function PatientForm({ patientId, formId = 1 }) {
                         </Button>
                       </div>
                     )}
-                  </div>
-                );
-              }
-
-              // Para outros tipos de questão, sempre mostrar o comentário se has_comment for true
-              if (!isChoiceType) {
-                return (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <Text strong style={{ fontSize: 14 }}>Comentário</Text>
-                    </div>
-                    <Form.Item 
-                      name={commentFieldName}
-                      style={{ marginBottom: 0 }}
-                    >
-                      <TextArea 
-                        rows={2} 
-                        placeholder="Adicione um comentário (opcional)" 
-                      />
-                    </Form.Item>
                   </div>
                 );
               }

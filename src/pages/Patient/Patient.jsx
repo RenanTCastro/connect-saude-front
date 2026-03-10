@@ -38,6 +38,9 @@ export default function PatientDetails() {
   const [activeTab, setActiveTab] = useState("info");
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
+  const [selectedFormId, setSelectedFormId] = useState(1);
+  const [forms, setForms] = useState([]);
+  const [loadingForms, setLoadingForms] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -75,6 +78,31 @@ export default function PatientDetails() {
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === "form") {
+      fetchForms();
+    }
+  }, [activeTab]);
+
+  const fetchForms = async () => {
+    try {
+      setLoadingForms(true);
+      const response = await api.get("/forms");
+      // Filtrar apenas os formulários com IDs 1, 2, 3 e 4
+      const filteredForms = response.data.filter(form => [1, 2, 3, 4].includes(form.id_form));
+      setForms(filteredForms);
+      // Se o formulário selecionado não estiver na lista, selecionar o primeiro
+      if (filteredForms.length > 0 && !filteredForms.find(f => f.id_form === selectedFormId)) {
+        setSelectedFormId(filteredForms[0].id_form);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar formulários:", error);
+      messageApi.error("Erro ao carregar formulários.");
+    } finally {
+      setLoadingForms(false);
+    }
+  };
 
   const handleEdit = () => {
     form.setFieldsValue({
@@ -283,7 +311,29 @@ export default function PatientDetails() {
           {
             key: "form",
             label: "Anamnese",
-            children: <PatientForm patientId={id} formId={1} />,
+            children: (
+              <div>
+                <Card style={{ marginBottom: 16 }}>
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    <Text strong>Selecione o formulário:</Text>
+                    <Select
+                      value={selectedFormId}
+                      onChange={setSelectedFormId}
+                      style={{ width: "100%", maxWidth: 400 }}
+                      loading={loadingForms}
+                      placeholder="Selecione um formulário"
+                    >
+                      {forms.map((form) => (
+                        <Option key={form.id_form} value={form.id_form}>
+                          {form.name || `Formulário ${form.id_form}`}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Space>
+                </Card>
+                <PatientForm patientId={id} formId={selectedFormId} key={selectedFormId} />
+              </div>
+            ),
           },
         ]}
       />
