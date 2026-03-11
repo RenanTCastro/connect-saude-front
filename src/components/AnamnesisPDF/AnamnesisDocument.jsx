@@ -114,6 +114,20 @@ const formatDate = (dateString) => {
   }
 };
 
+const formatDocument = (document) => {
+  if (!document) return "-";
+  const digits = document.replace(/\D/g, "");
+  // Se tiver 11 dígitos, formata como CPF
+  if (digits.length === 11) {
+    return formatCPF(document);
+  }
+  // Se tiver 14 dígitos, formata como CNPJ
+  if (digits.length === 14) {
+    return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  }
+  return document;
+};
+
 // Componente do Documento PDF Dinâmico
 const AnamnesisDocument = ({ 
   patient = {}, 
@@ -245,6 +259,28 @@ const AnamnesisDocument = ({
             )}
           </View>
         )}
+
+        <View style={styles.divider} />
+
+        {/* Dados do Plano de Saúde */}
+        <View style={styles.section}>
+          <Text style={styles.subtitle}>Plano de Saúde</Text>
+          
+          <View style={styles.patientDataRow}>
+            <Text style={[styles.text, styles.patientDataLabel]}>Número da Carteirinha:</Text>
+            <Text style={[styles.text, styles.patientDataValue]}>{patient.plan_card_number || "-"}</Text>
+          </View>
+          
+          <View style={styles.patientDataRow}>
+            <Text style={[styles.text, styles.patientDataLabel]}>Titular do Plano:</Text>
+            <Text style={[styles.text, styles.patientDataValue]}>{patient.plan_holder || "-"}</Text>
+          </View>
+          
+          <View style={styles.patientDataRow}>
+            <Text style={[styles.text, styles.patientDataLabel]}>CPF/Documento do Titular:</Text>
+            <Text style={[styles.text, styles.patientDataValue]}>{formatDocument(patient.plan_document)}</Text>
+          </View>
+        </View>
 
         <View style={styles.divider} />
 

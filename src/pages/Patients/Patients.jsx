@@ -11,6 +11,7 @@ import {
   DatePicker,
   Select,
   Divider,
+  Tabs,
 } from "antd";
 import { EyeOutlined, SearchOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +21,7 @@ import "./Styles.css";
 
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { TextArea } = Input;
 
 export default function Patients() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -151,210 +153,270 @@ export default function Patients() {
         style={{ maxWidth: 700 }}
         styles={{
           body: {
-            maxHeight: "450px",
+            maxHeight: "600px",
             overflowY: "auto",
             paddingRight: 12,
           },
         }}
       >
         <Form form={form} layout="vertical">
-          <Form.Item
-            name="full_name"
-            label="Nome completo"
-            rules={[{ required: true, message: "Informe o nome completo!" }]}
-          >
-            <Input placeholder="Nome completo" maxLength={200}/>
-          </Form.Item>
+          <Tabs
+            defaultActiveKey="1"
+            items={[
+              {
+                key: "1",
+                label: "Dados Pessoais",
+                children: (
+                  <>
+                    <Form.Item
+                      name="full_name"
+                      label="Nome completo"
+                      rules={[{ required: true, message: "Informe o nome completo!" }]}
+                    >
+                      <Input placeholder="Nome completo" maxLength={200}/>
+                    </Form.Item>
 
-          <Form.Item 
-            name="gender" 
-            label="Gênero"
-            rules={[ { required: true, message: "Por favor, insira o gênero" }]}
-          >
-            <Select placeholder="Selecione o gênero">
-              <Option value="Masculino">Masculino</Option>
-              <Option value="Feminino">Feminino</Option>
-            </Select>
-          </Form.Item>
+                    <Form.Item 
+                      name="gender" 
+                      label="Gênero"
+                      rules={[ { required: true, message: "Por favor, insira o gênero" }]}
+                    >
+                      <Select placeholder="Selecione o gênero">
+                        <Option value="Masculino">Masculino</Option>
+                        <Option value="Feminino">Feminino</Option>
+                      </Select>
+                    </Form.Item>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <Form.Item
-              name="cpf"
-              label="CPF"
-              style={{ flex: 1 }}
-              rules={[
-                { required: true, message: "Informe o CPF!" },
-                { pattern: /^[0-9]{10,11}$/, message: "Somente números!" },
-                { min: 11, message: "Informe o CPF corretamente!" }
-              ]}
-            >
-              <Input placeholder="CPF (apenas números)" maxLength={11}/>
-            </Form.Item>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <Form.Item
+                        name="cpf"
+                        label="CPF"
+                        style={{ flex: 1 }}
+                        rules={[
+                          { required: true, message: "Informe o CPF!" },
+                          { pattern: /^[0-9]{10,11}$/, message: "Somente números!" },
+                          { min: 11, message: "Informe o CPF corretamente!" }
+                        ]}
+                      >
+                        <Input placeholder="CPF (apenas números)" maxLength={11}/>
+                      </Form.Item>
 
-            <Form.Item
-              name="rg"
-              label="RG"
-              style={{ flex: 1 }}
-              rules={[
-                { pattern: /^[0-9]*$/, message: "Somente números!" },
-                { 
-                  validator: (_, value) => {
-                    if (!value || value.length <= 11) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error("RG deve ter no máximo 11 dígitos!"));
-                  }
-                }
-              ]}
-            >
-              <Input placeholder="RG (opcional, até 11 dígitos)" maxLength={11}/>
-            </Form.Item>
+                      <Form.Item
+                        name="rg"
+                        label="RG"
+                        style={{ flex: 1 }}
+                        rules={[
+                          { pattern: /^[0-9]*$/, message: "Somente números!" },
+                          { 
+                            validator: (_, value) => {
+                              if (!value || value.length <= 11) {
+                                return Promise.resolve();
+                              }
+                              return Promise.reject(new Error("RG deve ter no máximo 11 dígitos!"));
+                            }
+                          }
+                        ]}
+                      >
+                        <Input placeholder="RG (opcional, até 11 dígitos)" maxLength={11}/>
+                      </Form.Item>
 
-            <Form.Item
-              name="phone"
-              label="Telefone"
-              rules={[
-                { required: true, message: "Por favor, insira o número de telefone!" },
-                { pattern: /^[0-9]{10,11}$/, message: "Digite um número válido (somente números)." },
-                { min: 11, message: "Digite um número válido." },
-              ]}
-            >
-              <Input
-                placeholder="Telefone (Whatsapp)"
-                maxLength={11}
-              />
-            </Form.Item>
+                      <Form.Item
+                        name="phone"
+                        label="Telefone"
+                        rules={[
+                          { required: true, message: "Por favor, insira o número de telefone!" },
+                          { pattern: /^[0-9]{10,11}$/, message: "Digite um número válido (somente números)." },
+                          { min: 11, message: "Digite um número válido." },
+                        ]}
+                      >
+                        <Input
+                          placeholder="Telefone (Whatsapp)"
+                          maxLength={11}
+                        />
+                      </Form.Item>
 
-            <Form.Item
-              name="birth_date"
-              label="Data de nascimento"
-              style={{ flex: 1 }}
-              rules={[ { required: true, message: "Por favor, insira a data de nascimento!" }]}
-            >
-              <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
-            </Form.Item>
-          </div>
+                      <Form.Item
+                        name="birth_date"
+                        label="Data de nascimento"
+                        style={{ flex: 1 }}
+                        rules={[ { required: true, message: "Por favor, insira a data de nascimento!" }]}
+                      >
+                        <DatePicker format="DD/MM/YYYY" style={{ width: "100%" }} />
+                      </Form.Item>
+                    </div>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <Form.Item 
-                name="zip_code" 
-                label="CEP" 
-                rules={[
-                    { min: 8, message: "Digite um CEP válido."}
-                ]}
-                style={{ flex: "0.7" }}
-            >
-              <Input placeholder="CEP" maxLength={8}/>
-            </Form.Item>
-            <Form.Item name="street" label="Endereço" style={{ flex: 2 }}>
-              <Input placeholder="Rua / Avenida" />
-            </Form.Item>
-          </div>
+                    <Divider orientation="left" style={{ marginTop: 16, marginBottom: 16 }}>
+                      <Text strong>Dados do Responsável (Opcional)</Text>
+                    </Divider>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <Form.Item name="neighborhood" label="Bairro" style={{ flex: 1 }}>
-              <Input placeholder="Bairro" maxLength={200}/>
-            </Form.Item>
+                    <Form.Item
+                      name="responsible_name"
+                      label="Nome do Responsável"
+                    >
+                      <Input placeholder="Nome completo do responsável" maxLength={200} />
+                    </Form.Item>
 
-            <Form.Item name="city" label="Cidade" style={{ flex: 1 }}>
-              <Input placeholder="Cidade" maxLength={200}/>
-            </Form.Item>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <Form.Item
+                        name="responsible_cpf"
+                        label="CPF do Responsável"
+                        style={{ flex: 1 }}
+                        rules={[
+                          { pattern: /^[0-9]{0,11}$/, message: "Somente números!" },
+                          { 
+                            validator: (_, value) => {
+                              if (!value || value.length === 0 || value.length === 11) {
+                                return Promise.resolve();
+                              }
+                              return Promise.reject(new Error("CPF deve ter 11 dígitos!"));
+                            }
+                          }
+                        ]}
+                      >
+                        <Input placeholder="CPF (apenas números)" maxLength={11} />
+                      </Form.Item>
 
-            <Form.Item name="state" label="UF" style={{ flex: "0.5" }}>
-              <Select placeholder="UF">
-                {[
-                  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA",
-                  "MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN",
-                  "RS","RO","RR","SC","SP","SE","TO",
-                ].map((uf) => (
-                  <Option key={uf} value={uf}>
-                    {uf}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </div>
+                      <Form.Item
+                        name="responsible_phone"
+                        label="Telefone do Responsável"
+                        style={{ flex: 1 }}
+                        rules={[
+                          { pattern: /^[0-9]{0,11}$/, message: "Digite um número válido (somente números)." },
+                          { 
+                            validator: (_, value) => {
+                              if (!value || value.length === 0 || value.length >= 10) {
+                                return Promise.resolve();
+                              }
+                              return Promise.reject(new Error("Digite um número válido."));
+                            }
+                          }
+                        ]}
+                      >
+                        <Input placeholder="Telefone (Whatsapp)" maxLength={11} />
+                      </Form.Item>
+                    </div>
 
-          <Divider orientation="left" style={{ marginTop: 16, marginBottom: 16 }}>
-            <Text strong>Dados do Responsável (Opcional)</Text>
-          </Divider>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <Form.Item
+                        name="responsible_email"
+                        label="E-mail do Responsável"
+                        style={{ flex: 1 }}
+                        rules={[
+                          { type: "email", message: "Digite um e-mail válido!" }
+                        ]}
+                      >
+                        <Input placeholder="E-mail do responsável" maxLength={255} />
+                      </Form.Item>
 
-          <Form.Item
-            name="responsible_name"
-            label="Nome do Responsável"
-          >
-            <Input placeholder="Nome completo do responsável" maxLength={200} />
-          </Form.Item>
+                      <Form.Item
+                        name="responsible_relationship"
+                        label="Grau de Parentesco"
+                        style={{ flex: 1 }}
+                      >
+                        <Select placeholder="Selecione o grau de parentesco">
+                          <Option value="Pai">Pai</Option>
+                          <Option value="Mãe">Mãe</Option>
+                          <Option value="Avô">Avô</Option>
+                          <Option value="Avó">Avó</Option>
+                          <Option value="Tio">Tio</Option>
+                          <Option value="Tia">Tia</Option>
+                          <Option value="Tutor">Tutor</Option>
+                          <Option value="Outro">Outro</Option>
+                        </Select>
+                      </Form.Item>
+                    </div>
+                  </>
+                ),
+              },
+              {
+                key: "2",
+                label: "Endereço",
+                children: (
+                  <>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <Form.Item 
+                        name="zip_code" 
+                        label="CEP" 
+                        rules={[
+                          { min: 8, message: "Digite um CEP válido."}
+                        ]}
+                        style={{ flex: "0.7" }}
+                      >
+                        <Input placeholder="CEP" maxLength={8}/>
+                      </Form.Item>
+                      <Form.Item name="street" label="Endereço" style={{ flex: 2 }}>
+                        <Input placeholder="Rua / Avenida" />
+                      </Form.Item>
+                    </div>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <Form.Item
-              name="responsible_cpf"
-              label="CPF do Responsável"
-              style={{ flex: 1 }}
-              rules={[
-                { pattern: /^[0-9]{0,11}$/, message: "Somente números!" },
-                { 
-                  validator: (_, value) => {
-                    if (!value || value.length === 0 || value.length === 11) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error("CPF deve ter 11 dígitos!"));
-                  }
-                }
-              ]}
-            >
-              <Input placeholder="CPF (apenas números)" maxLength={11} />
-            </Form.Item>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <Form.Item name="neighborhood" label="Bairro" style={{ flex: 1 }}>
+                        <Input placeholder="Bairro" maxLength={200}/>
+                      </Form.Item>
 
-            <Form.Item
-              name="responsible_phone"
-              label="Telefone do Responsável"
-              style={{ flex: 1 }}
-              rules={[
-                { pattern: /^[0-9]{0,11}$/, message: "Digite um número válido (somente números)." },
-                { 
-                  validator: (_, value) => {
-                    if (!value || value.length === 0 || value.length >= 10) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error("Digite um número válido."));
-                  }
-                }
-              ]}
-            >
-              <Input placeholder="Telefone (Whatsapp)" maxLength={11} />
-            </Form.Item>
-          </div>
+                      <Form.Item name="city" label="Cidade" style={{ flex: 1 }}>
+                        <Input placeholder="Cidade" maxLength={200}/>
+                      </Form.Item>
 
-          <div style={{ display: "flex", gap: 12 }}>
-            <Form.Item
-              name="responsible_email"
-              label="E-mail do Responsável"
-              style={{ flex: 1 }}
-              rules={[
-                { type: "email", message: "Digite um e-mail válido!" }
-              ]}
-            >
-              <Input placeholder="E-mail do responsável" maxLength={255} />
-            </Form.Item>
+                      <Form.Item name="state" label="UF" style={{ flex: "0.5" }}>
+                        <Select placeholder="UF">
+                          {[
+                            "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA",
+                            "MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN",
+                            "RS","RO","RR","SC","SP","SE","TO",
+                          ].map((uf) => (
+                            <Option key={uf} value={uf}>
+                              {uf}
+                            </Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </div>
+                  </>
+                ),
+              },
+              {
+                key: "3",
+                label: "Plano",
+                children: (
+                  <>
+                    <Form.Item
+                      name="plan_card_number"
+                      label="Número da Carteirinha"
+                    >
+                      <Input placeholder="Número da carteirinha do plano" maxLength={50} />
+                    </Form.Item>
 
-            <Form.Item
-              name="responsible_relationship"
-              label="Grau de Parentesco"
-              style={{ flex: 1 }}
-            >
-              <Select placeholder="Selecione o grau de parentesco">
-                <Option value="Pai">Pai</Option>
-                <Option value="Mãe">Mãe</Option>
-                <Option value="Avô">Avô</Option>
-                <Option value="Avó">Avó</Option>
-                <Option value="Tio">Tio</Option>
-                <Option value="Tia">Tia</Option>
-                <Option value="Tutor">Tutor</Option>
-                <Option value="Outro">Outro</Option>
-              </Select>
-            </Form.Item>
-          </div>
+                    <Form.Item
+                      name="plan_holder"
+                      label="Titular do Plano"
+                    >
+                      <Input placeholder="Nome do titular do plano" maxLength={255} />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="plan_document"
+                      label="Documento do Titular"
+                    >
+                      <Input placeholder="CPF ou CNPJ do titular" maxLength={20} />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="observations"
+                      label="Observações"
+                    >
+                      <TextArea
+                        rows={4}
+                        placeholder="Detalhes sobre o tipo de tratamento que este cliente estará aceito. Ex: Tratamento ortodôntico, implantes, etc."
+                        maxLength={1000}
+                        showCount
+                      />
+                    </Form.Item>
+                  </>
+                ),
+              },
+            ]}
+          />
         </Form>
       </Modal>
 
