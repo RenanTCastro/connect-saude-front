@@ -15,10 +15,12 @@ import {
   DatePicker,
   message,
   Space,
+  Tabs,
 } from "antd";
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../services/api";
+import PatientForm from "../../components/PatientForm/PatientForm";
 import "./Styles.css";
 
 const { Title, Text } = Typography;
@@ -33,8 +35,12 @@ export default function PatientDetails() {
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("info");
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
+  const [selectedFormId, setSelectedFormId] = useState(1);
+  const [forms, setForms] = useState([]);
+  const [loadingForms, setLoadingForms] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -72,6 +78,31 @@ export default function PatientDetails() {
   useEffect(() => {
     fetchData();
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === "form") {
+      fetchForms();
+    }
+  }, [activeTab]);
+
+  const fetchForms = async () => {
+    try {
+      setLoadingForms(true);
+      const response = await api.get("/forms");
+      // Filtrar apenas os formulários com IDs 1, 2, 3 e 4
+      const filteredForms = response.data.filter(form => [1, 2, 3, 4].includes(form.id_form));
+      setForms(filteredForms);
+      // Se o formulário selecionado não estiver na lista, selecionar o primeiro
+      if (filteredForms.length > 0 && !filteredForms.find(f => f.id_form === selectedFormId)) {
+        setSelectedFormId(filteredForms[0].id_form);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar formulários:", error);
+      messageApi.error("Erro ao carregar formulários.");
+    } finally {
+      setLoadingForms(false);
+    }
+  };
 
   const handleEdit = () => {
     form.setFieldsValue({
@@ -146,125 +177,167 @@ export default function PatientDetails() {
         </Space>
       </div>
 
-      <Row gutter={16}>
-        <Col xs={24} sm={24} md={12}>
-          <Card title="Dados pessoais">
-            <p><Text strong>Código do paciente:</Text> {patient?.id}</p>
-            <p><Text strong>Nome:</Text> {patient?.full_name}</p>
-            <p><Text strong>Número do paciente:</Text> {patient?.patient_number}</p>
-            <p><Text strong>CPF:</Text> {formatCPF(patient?.cpf)}</p>
-            <p><Text strong>Data de nascimento:</Text> {formatBirthDate(patient?.birth_date)}</p> 
-           <p><Text strong>Idade:</Text> {patient?.age} anos</p>
-            <p><Text strong>Sexo:</Text> {patient?.gender}</p>
-            <p><Text strong>Celular:</Text> {formatPhone(patient?.phone)}</p>
-            <p><Text strong>CEP:</Text> {patient?.zip_code || "-"}</p>
-            <p><Text strong>Endereço:</Text> {patient?.street}</p>
-            <p><Text strong>Bairro:</Text> {patient?.neighborhood}</p>
-            <p><Text strong>Cidade:</Text> {patient?.city} - {patient?.state}</p>
-          </Card>
-        </Col>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: "info",
+            label: "Informações",
+            children: (
+              <>
+                <Row gutter={16}>
+                  <Col xs={24} sm={24} md={12}>
+                    <Card title="Dados pessoais">
+                      <p><Text strong>Código do paciente:</Text> {patient?.id}</p>
+                      <p><Text strong>Nome:</Text> {patient?.full_name}</p>
+                      <p><Text strong>Número do paciente:</Text> {patient?.patient_number}</p>
+                      <p><Text strong>CPF:</Text> {formatCPF(patient?.cpf)}</p>
+                      <p><Text strong>RG:</Text> {patient?.rg || "-"}</p>
+                      <p><Text strong>Data de nascimento:</Text> {formatBirthDate(patient?.birth_date)}</p> 
+                     <p><Text strong>Idade:</Text> {patient?.age} anos</p>
+                      <p><Text strong>Sexo:</Text> {patient?.gender}</p>
+                      <p><Text strong>Celular:</Text> {formatPhone(patient?.phone)}</p>
+                      <p><Text strong>CEP:</Text> {patient?.zip_code || "-"}</p>
+                      <p><Text strong>Endereço:</Text> {patient?.street}</p>
+                      <p><Text strong>Bairro:</Text> {patient?.neighborhood}</p>
+                      <p><Text strong>Cidade:</Text> {patient?.city} - {patient?.state}</p>
+                    </Card>
+                  </Col>
 
-        <Col xs={24} sm={24} md={12}>
-          <Card title="Consultas" style={{ maxHeight: 400, overflowY: "auto" }}>
-            {appointments.length === 0 ? (
-              <Text type="secondary">Nenhuma consulta registrada.</Text>
-            ) : (
-              appointments.map((appt) => (
-                <div key={appt.id} style={{ marginBottom: 16 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-                    <div style={{ flex: 1 }}>
-                      <Text strong style={{ display: "block", marginBottom: 4 }}>
-                        {appt.title || "Consulta"}
-                      </Text>
-                      <Text style={{ display: "block", marginBottom: 4 }}>
-                        {dayjs(appt.start_datetime).format("DD/MM/YYYY [às] HH:mm")}
-                      </Text>
-                      {appt.description && (
-                        <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-                          {appt.description}
-                        </Text>
+                  <Col xs={24} sm={24} md={12}>
+                    <Card title="Consultas" style={{ maxHeight: 400, overflowY: "auto" }}>
+                      {appointments.length === 0 ? (
+                        <Text type="secondary">Nenhuma consulta registrada.</Text>
+                      ) : (
+                        appointments.map((appt) => (
+                          <div key={appt.id} style={{ marginBottom: 16 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+                              <div style={{ flex: 1 }}>
+                                <Text strong style={{ display: "block", marginBottom: 4 }}>
+                                  {appt.title || "Consulta"}
+                                </Text>
+                                <Text style={{ display: "block", marginBottom: 4 }}>
+                                  {dayjs(appt.start_datetime).format("DD/MM/YYYY [às] HH:mm")}
+                                </Text>
+                                {appt.description && (
+                                  <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
+                                    {appt.description}
+                                  </Text>
+                                )}
+                              </div>
+                              <Text 
+                                type={appt.status === "completed" ? "success" : appt.status === "cancelled" ? "danger" : "default"}
+                                style={{ fontSize: 12 }}
+                              >
+                                {appt.status === "scheduled" ? "Agendada" : 
+                                 appt.status === "completed" ? "Finalizada" : 
+                                 appt.status === "cancelled" ? "Cancelada" : 
+                                 appt.status || "Agendada"}
+                              </Text>
+                            </div>
+                            <Button 
+                              type="link" 
+                              style={{ padding: 0 }}
+                              onClick={() => navigate(`/app/appointment`)}
+                            >
+                              Ver na agenda
+                            </Button>
+                            {appt !== appointments[appointments.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
+                          </div>
+                        ))
                       )}
-                    </div>
-                    <Text 
-                      type={appt.status === "completed" ? "success" : appt.status === "cancelled" ? "danger" : "default"}
-                      style={{ fontSize: 12 }}
-                    >
-                      {appt.status === "scheduled" ? "Agendada" : 
-                       appt.status === "completed" ? "Finalizada" : 
-                       appt.status === "cancelled" ? "Cancelada" : 
-                       appt.status || "Agendada"}
-                    </Text>
-                  </div>
-                  <Button 
-                    type="link" 
-                    style={{ padding: 0 }}
-                    onClick={() => navigate(`/app/appointment`)}
-                  >
-                    Ver na agenda
-                  </Button>
-                  {appt !== appointments[appointments.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
-                </div>
-              ))
-            )}
-          </Card>
-        </Col>
-      </Row>
+                    </Card>
+                  </Col>
+                </Row>
 
-      <Divider />
-      <Card title="Faturas" style={{ marginTop: 12, minHeight: 120 }}>
-        {invoices.length === 0 ? (
-          <Text type="secondary">Nenhuma fatura registrada.</Text>
-        ) : (
-          <div style={{ maxHeight: 400, overflowY: "auto" }}>
-            {invoices.map((invoice) => (
-              <div key={invoice.id} style={{ marginBottom: 16, padding: 12, border: "1px solid #f0f0f0", borderRadius: 4 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                  <div style={{ flex: 1 }}>
-                    <Text strong style={{ display: "block", marginBottom: 4 }}>{invoice.title}</Text>
-                    {invoice.description && (
-                      <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-                        {invoice.description}
-                      </Text>
-                    )}
-                    {invoice.installment.total > 1 && (
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        Parcela {invoice.installment.current} de {invoice.installment.total}
-                      </Text>
-                    )}
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <Text strong style={{ fontSize: 16, color: invoice.isPaid ? "#52c41a" : "#ff4d4f", display: "block" }}>
-                      R$ {invoice.amount.toFixed(2).replace(".", ",")}
-                    </Text>
-                    <Text 
-                      type={invoice.isPaid ? "success" : "danger"} 
-                      style={{ fontSize: 12, display: "block", marginTop: 4 }}
+                <Divider />
+                <Card title="Faturas" style={{ marginTop: 12, minHeight: 120 }}>
+                  {invoices.length === 0 ? (
+                    <Text type="secondary">Nenhuma fatura registrada.</Text>
+                  ) : (
+                    <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                      {invoices.map((invoice) => (
+                        <div key={invoice.id} style={{ marginBottom: 16, padding: 12, border: "1px solid #f0f0f0", borderRadius: 4 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                            <div style={{ flex: 1 }}>
+                              <Text strong style={{ display: "block", marginBottom: 4 }}>{invoice.title}</Text>
+                              {invoice.description && (
+                                <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
+                                  {invoice.description}
+                                </Text>
+                              )}
+                              {invoice.installment.total > 1 && (
+                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                  Parcela {invoice.installment.current} de {invoice.installment.total}
+                                </Text>
+                              )}
+                            </div>
+                            <div style={{ textAlign: "right" }}>
+                              <Text strong style={{ fontSize: 16, color: invoice.isPaid ? "#52c41a" : "#ff4d4f", display: "block" }}>
+                                R$ {invoice.amount.toFixed(2).replace(".", ",")}
+                              </Text>
+                              <Text 
+                                type={invoice.isPaid ? "success" : "danger"} 
+                                style={{ fontSize: 12, display: "block", marginTop: 4 }}
+                              >
+                                {invoice.isPaid ? "Paga" : "Pendente"}
+                              </Text>
+                            </div>
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8c8c8c" }}>
+                            <Text>
+                              <Text strong>Vencimento:</Text> {dayjs(invoice.dueDate).format("DD/MM/YYYY")}
+                            </Text>
+                            {invoice.paymentDate && (
+                              <Text>
+                                <Text strong>Pagamento:</Text> {dayjs(invoice.paymentDate).format("DD/MM/YYYY")}
+                              </Text>
+                            )}
+                            {invoice.paymentType && (
+                              <Text>
+                                <Text strong>Forma:</Text> {invoice.paymentType}
+                              </Text>
+                            )}
+                          </div>
+                          {invoice !== invoices[invoices.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </>
+            ),
+          },
+          {
+            key: "form",
+            label: "Anamnese",
+            children: (
+              <div>
+                <Card style={{ marginBottom: 16 }}>
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    <Text strong>Selecione o formulário:</Text>
+                    <Select
+                      value={selectedFormId}
+                      onChange={setSelectedFormId}
+                      style={{ width: "100%", maxWidth: 400 }}
+                      loading={loadingForms}
+                      placeholder="Selecione um formulário"
                     >
-                      {invoice.isPaid ? "Paga" : "Pendente"}
-                    </Text>
-                  </div>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8c8c8c" }}>
-                  <Text>
-                    <Text strong>Vencimento:</Text> {dayjs(invoice.dueDate).format("DD/MM/YYYY")}
-                  </Text>
-                  {invoice.paymentDate && (
-                    <Text>
-                      <Text strong>Pagamento:</Text> {dayjs(invoice.paymentDate).format("DD/MM/YYYY")}
-                    </Text>
-                  )}
-                  {invoice.paymentType && (
-                    <Text>
-                      <Text strong>Forma:</Text> {invoice.paymentType}
-                    </Text>
-                  )}
-                </div>
-                {invoice !== invoices[invoices.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
+                      {forms.map((form) => (
+                        <Option key={form.id_form} value={form.id_form}>
+                          {form.name || `Formulário ${form.id_form}`}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Space>
+                </Card>
+                <PatientForm patientId={id} formId={selectedFormId} key={selectedFormId} />
               </div>
-            ))}
-          </div>
-        )}
-      </Card>
+            ),
+          },
+        ]}
+      />
 
       <Modal
         title="Editar Paciente"
@@ -324,6 +397,26 @@ export default function PatientDetails() {
               ]}
             >
               <Input placeholder="CPF (apenas números)" maxLength={11}/>
+            </Form.Item>
+
+            <Form.Item
+              name="rg"
+              label="RG"
+              style={{ flex: 1 }}
+              className="form-item-responsive"
+              rules={[
+                { pattern: /^[0-9]*$/, message: "Somente números!" },
+                { 
+                  validator: (_, value) => {
+                    if (!value || value.length <= 11) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("RG deve ter no máximo 11 dígitos!"));
+                  }
+                }
+              ]}
+            >
+              <Input placeholder="RG (opcional, até 11 dígitos)" maxLength={11}/>
             </Form.Item>
 
             <Form.Item

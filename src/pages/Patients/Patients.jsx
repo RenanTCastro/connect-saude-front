@@ -191,6 +191,25 @@ export default function Patients() {
             </Form.Item>
 
             <Form.Item
+              name="rg"
+              label="RG"
+              style={{ flex: 1 }}
+              rules={[
+                { pattern: /^[0-9]*$/, message: "Somente números!" },
+                { 
+                  validator: (_, value) => {
+                    if (!value || value.length <= 11) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("RG deve ter no máximo 11 dígitos!"));
+                  }
+                }
+              ]}
+            >
+              <Input placeholder="RG (opcional, até 11 dígitos)" maxLength={11}/>
+            </Form.Item>
+
+            <Form.Item
               name="phone"
               label="Telefone"
               rules={[
