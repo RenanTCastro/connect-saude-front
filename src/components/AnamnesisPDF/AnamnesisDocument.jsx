@@ -206,6 +206,48 @@ const AnamnesisDocument = ({
 
         <View style={styles.divider} />
 
+        {/* Dados do Responsável */}
+        {patient.responsible_name && (
+          <View style={styles.section}>
+            <Text style={styles.subtitle}>Dados do Responsável</Text>
+            
+            <View style={styles.patientDataRow}>
+              <Text style={[styles.text, styles.patientDataLabel]}>Nome:</Text>
+              <Text style={[styles.text, styles.patientDataValue]}>{patient.responsible_name || "-"}</Text>
+            </View>
+            
+            {patient.responsible_cpf && (
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>CPF:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{formatCPF(patient.responsible_cpf)}</Text>
+              </View>
+            )}
+            
+            {patient.responsible_phone && (
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Telefone:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{formatPhone(patient.responsible_phone)}</Text>
+              </View>
+            )}
+            
+            {patient.responsible_email && (
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>E-mail:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{patient.responsible_email}</Text>
+              </View>
+            )}
+            
+            {patient.responsible_relationship && (
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Grau de Parentesco:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{patient.responsible_relationship}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        <View style={styles.divider} />
+
         {/* Anamnese - Perguntas e Respostas */}
         {sortedQuestions.length > 0 && (
           <View style={styles.section}>
