@@ -155,6 +155,11 @@ const AnamnesisDocument = ({
           </View>
           
           <View style={styles.patientDataRow}>
+            <Text style={[styles.text, styles.patientDataLabel]}>RG:</Text>
+            <Text style={[styles.text, styles.patientDataValue]}>{patient.rg || "-"}</Text>
+          </View>
+          
+          <View style={styles.patientDataRow}>
             <Text style={[styles.text, styles.patientDataLabel]}>Data de Nascimento:</Text>
             <Text style={[styles.text, styles.patientDataValue]}>{formatDate(patient.birth_date)}</Text>
           </View>

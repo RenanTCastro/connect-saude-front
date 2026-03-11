@@ -193,6 +193,7 @@ export default function PatientDetails() {
                       <p><Text strong>Nome:</Text> {patient?.full_name}</p>
                       <p><Text strong>Número do paciente:</Text> {patient?.patient_number}</p>
                       <p><Text strong>CPF:</Text> {formatCPF(patient?.cpf)}</p>
+                      <p><Text strong>RG:</Text> {patient?.rg || "-"}</p>
                       <p><Text strong>Data de nascimento:</Text> {formatBirthDate(patient?.birth_date)}</p> 
                      <p><Text strong>Idade:</Text> {patient?.age} anos</p>
                       <p><Text strong>Sexo:</Text> {patient?.gender}</p>
@@ -396,6 +397,26 @@ export default function PatientDetails() {
               ]}
             >
               <Input placeholder="CPF (apenas números)" maxLength={11}/>
+            </Form.Item>
+
+            <Form.Item
+              name="rg"
+              label="RG"
+              style={{ flex: 1 }}
+              className="form-item-responsive"
+              rules={[
+                { pattern: /^[0-9]*$/, message: "Somente números!" },
+                { 
+                  validator: (_, value) => {
+                    if (!value || value.length <= 11) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(new Error("RG deve ter no máximo 11 dígitos!"));
+                  }
+                }
+              ]}
+            >
+              <Input placeholder="RG (opcional, até 11 dígitos)" maxLength={11}/>
             </Form.Item>
 
             <Form.Item
