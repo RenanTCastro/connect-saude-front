@@ -13,6 +13,7 @@ import SalesCRM from "./pages/SalesCRM/SalesCRM";
 import Appointment from "./pages/Appointment/Appointment";
 import CashFlow from "./pages/CashFlow/CashFlow";
 import Settings from "./pages/Settings/Settings";
+import TestPDF from "./pages/TestPDF/TestPDF";
 
 const router = createBrowserRouter([
     {
@@ -42,6 +43,7 @@ const router = createBrowserRouter([
             { path: "sales", element: <ProtectedRoute><SubscriptionGuard><SalesCRM /></SubscriptionGuard></ProtectedRoute>},
             { path: "appointment", element: <ProtectedRoute><SubscriptionGuard><Appointment /></SubscriptionGuard></ProtectedRoute>},
             { path: "settings", element: <ProtectedRoute><Settings /></ProtectedRoute>},
+            { path: "test-pdf", element: <ProtectedRoute><TestPDF /></ProtectedRoute>},
             { path: "*", element: <ProtectedRoute><SubscriptionGuard><>Página não encontrada</></SubscriptionGuard></ProtectedRoute> },
         ],
     },
