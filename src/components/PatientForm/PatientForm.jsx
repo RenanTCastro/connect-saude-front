@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Form, Input, Button, Card, Typography, Radio, InputNumber, DatePicker, message, Spin, Space, Alert } from "antd";
+import { Form, Input, Button, Card, Typography, Radio, InputNumber, DatePicker, message, Spin, Space } from "antd";
 import { SaveOutlined, CloseOutlined, EyeOutlined, EyeInvisibleOutlined, FilePdfOutlined } from "@ant-design/icons";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import dayjs from "dayjs";
 import api from "../../services/api";
 import AnamnesisDocument from "../AnamnesisPDF/AnamnesisDocument";
+import "./PatientForm.css";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -19,11 +20,47 @@ export default function PatientForm({ patientId, formId = 1 }) {
   const [showComments, setShowComments] = useState({});
   const [formErrors, setFormErrors] = useState([]);
   const [patient, setPatient] = useState(null);
+  const [siderLeft, setSiderLeft] = useState(200); // 200px quando expandido, 80px quando colapsado
 
   useEffect(() => {
     fetchFormData();
     fetchPatientData();
   }, [formId, patientId]);
+
+  // Detectar estado do menu lateral
+  useEffect(() => {
+    const checkSiderState = () => {
+      const sider = document.querySelector('.ant-layout-sider');
+      if (sider) {
+        const isCollapsed = sider.classList.contains('ant-layout-sider-collapsed');
+        setSiderLeft(isCollapsed ? 80 : 200);
+      } else {
+        // Em mobile, não há sider visível
+        setSiderLeft(0);
+      }
+    };
+
+    // Verificar inicialmente
+    checkSiderState();
+
+    // Observar mudanças no DOM
+    const observer = new MutationObserver(checkSiderState);
+    const sider = document.querySelector('.ant-layout-sider');
+    if (sider) {
+      observer.observe(sider, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+    }
+
+    // Verificar em resize (para mobile)
+    window.addEventListener('resize', checkSiderState);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', checkSiderState);
+    };
+  }, []);
 
   const fetchPatientData = async () => {
     try {
@@ -155,15 +192,8 @@ export default function PatientForm({ patientId, formId = 1 }) {
   };
 
   const handleFormFinishFailed = (errorInfo) => {
-    const errors = errorInfo.errorFields?.map(field => {
-      const question = formData?.questions.find(q => 
-        field.name[0] === `question_${q.id_question}` || field.name[0] === `comment_${q.id_question}`
-      );
-      return question 
-        ? `${question.question}: ${field.errors[0]}`
-        : field.errors[0];
-    }) || [];
-    setFormErrors(errors);
+    // Exibir apenas mensagem genérica de erro
+    messageApi.error("Erro ao salvar formulário. Verifique se todos os campos obrigatórios foram preenchidos.");
   };
 
   const toggleComment = (questionId) => {
@@ -355,7 +385,7 @@ export default function PatientForm({ patientId, formId = 1 }) {
     );
   };
 
-  if (loading) {
+  if (loading || submitting) {
     return (
       <div style={{ textAlign: "center", padding: "40px" }}>
         <Spin size="large" />
@@ -372,9 +402,9 @@ export default function PatientForm({ patientId, formId = 1 }) {
   }
 
   return (
-    <div>
+    <div style={{ position: "relative" }}>
       {contextHolder}
-      <Card>
+      <Card style={{ marginBottom: 80 }}>
         <Space direction="vertical" size="large" style={{ width: "100%" }}>
           <div>
             <Title level={4}>{formData.name}</Title>
@@ -398,67 +428,78 @@ export default function PatientForm({ patientId, formId = 1 }) {
                 </div>
               ))}
 
-            {formErrors.length > 0 && (
-              <Alert
-                message="Erro ao salvar formulário"
-                description={
-                  <ul style={{ margin: 0, paddingLeft: 20 }}>
-                    {formErrors.map((error, index) => (
-                      <li key={index}>{error}</li>
-                    ))}
-                  </ul>
-                }
-                type="error"
-                showIcon
-                closable
-                onClose={() => setFormErrors([])}
-                style={{ marginBottom: 16 }}
-              />
-            )}
-
-            <Form.Item>
-              <Space>
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  icon={<SaveOutlined />}
-                  loading={submitting}
-                  size="large"
-                >
-                  Salvar Formulário
-                </Button>
-                {patient && formData && Object.keys(existingAnswers).length > 0 && (
-                  <PDFDownloadLink
-                    document={
-                      <AnamnesisDocument
-                        patient={patient}
-                        formData={formData}
-                        answers={existingAnswers}
-                      />
-                    }
-                    fileName={`Anamnese_${patient.full_name?.replace(/\s+/g, "_") || "Paciente"}_${dayjs().format("YYYY-MM-DD")}.pdf`}
-                    style={{
-                      textDecoration: "none",
-                    }}
-                  >
-                    {({ blob, url, loading: pdfLoading, error }) => (
-                      <Button
-                        type="default"
-                        icon={<FilePdfOutlined />}
-                        loading={pdfLoading}
-                        size="large"
-                        disabled={pdfLoading}
-                      >
-                        {pdfLoading ? "Gerando PDF..." : "Exportar PDF"}
-                      </Button>
-                    )}
-                  </PDFDownloadLink>
-                )}
-              </Space>
-            </Form.Item>
           </Form>
         </Space>
       </Card>
+
+      {/* Botões fixos na parte inferior */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: 0,
+          left: siderLeft,
+          right: 0,
+          backgroundColor: "#fff",
+          padding: "16px 24px",
+          boxShadow: "0 -2px 8px rgba(0, 0, 0, 0.1)",
+          zIndex: 1000,
+          borderTop: "1px solid #f0f0f0",
+          transition: "left 0.2s",
+        }}
+        className="patient-form-actions"
+      >
+        <Space>
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={<SaveOutlined />}
+            loading={submitting}
+            size="large"
+            onClick={() => form.submit()}
+          >
+            Salvar
+          </Button>
+          {patient && formData ? (
+            Object.keys(existingAnswers).length > 0 ? (
+              <PDFDownloadLink
+                document={
+                  <AnamnesisDocument
+                    patient={patient}
+                    formData={formData}
+                    answers={existingAnswers}
+                  />
+                }
+                fileName={`Anamnese_${patient.full_name?.replace(/\s+/g, "_") || "Paciente"}_${dayjs().format("YYYY-MM-DD")}.pdf`}
+                style={{
+                  textDecoration: "none",
+                }}
+              >
+                {({ blob, url, loading: pdfLoading, error }) => (
+                  <Button
+                    type="default"
+                    icon={<FilePdfOutlined />}
+                    loading={pdfLoading}
+                    size="large"
+                    disabled={pdfLoading}
+                  >
+                    {pdfLoading ? "Gerando PDF..." : "Exportar PDF"}
+                  </Button>
+                )}
+              </PDFDownloadLink>
+            ) : (
+              <Button
+                type="default"
+                icon={<FilePdfOutlined />}
+                size="large"
+                disabled
+                title="Salve o formulário primeiro para exportar o PDF"
+              >
+                Exportar PDF
+              </Button>
+            )
+          ) : null}
+        </Space>
+      </div>
     </div>
   );
 }
