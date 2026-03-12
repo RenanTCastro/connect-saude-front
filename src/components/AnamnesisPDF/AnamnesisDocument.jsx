@@ -12,14 +12,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    marginBottom: 15,
     textAlign: 'center',
     fontWeight: 'bold',
   },
   subtitle: {
-    fontSize: 14,
-    marginTop: 15,
-    marginBottom: 10,
+    fontSize: 12,
+    marginTop: 5,
+    marginBottom: 5,
     fontWeight: 'bold',
   },
   section: {
@@ -65,7 +64,6 @@ const styles = StyleSheet.create({
   },
   patientDataRow: {
     flexDirection: 'row',
-    marginBottom: 3,
   },
   patientDataLabel: {
     width: '35%',
@@ -73,6 +71,17 @@ const styles = StyleSheet.create({
   },
   patientDataValue: {
     width: '65%',
+  },
+  twoColumns: {
+    flexDirection: 'row',
+    marginTop: 5,
+  },
+  column: {
+    width: '48%',
+    marginRight: '4%',
+  },
+  columnLast: {
+    width: '48%',
   },
   footer: {
     position: 'absolute',
@@ -144,77 +153,86 @@ const AnamnesisDocument = ({
       <Page size="A4" style={styles.page}>
         {/* Título do Formulário */}
         <View style={styles.section}>
-          <Text style={styles.title}>{formData.name || "Anamnese"}</Text>
-          {formData.description && (
-            <Text style={[styles.text, { textAlign: 'center' }]}>
-              {formData.description}
-            </Text>
-          )}
+          <Text style={styles.title}>{"Anamnese"}</Text>
         </View>
 
         <View style={styles.divider} />
 
         {/* Dados Pessoais do Paciente */}
-        <View style={styles.section}>
+        <View style={styles.section} display="flex">
           <Text style={styles.subtitle}>Dados Pessoais</Text>
           
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Nome:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{patient.full_name || "-"}</Text>
+          <View style={styles.twoColumns}>
+            <View style={styles.column}>
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Nome:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{patient.full_name || "-"}</Text>
+              </View>
+              
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>CPF:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{formatCPF(patient.cpf)}</Text>
+              </View>
+              
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>RG:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{patient.rg || "-"}</Text>
+              </View>
+            </View>
+
+            <View style={styles.columnLast}>
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Data Nascimento:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{formatDate(patient.birth_date)}</Text>
+              </View>
+              
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Idade:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>
+                  {patient.age ? `${patient.age} anos` : "-"}
+                </Text>
+              </View>
+              
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Sexo:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{patient.gender || "-"}</Text>
+              </View>
+            </View>
           </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>CPF:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{formatCPF(patient.cpf)}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>RG:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{patient.rg || "-"}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Data de Nascimento:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{formatDate(patient.birth_date)}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Idade:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>
-              {patient.age ? `${patient.age} anos` : "-"}
-            </Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Sexo:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{patient.gender || "-"}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Telefone:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{formatPhone(patient.phone)}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>CEP:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{patient.zip_code || "-"}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Endereço:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{patient.street || "-"}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Bairro:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{patient.neighborhood || "-"}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Cidade:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>
-              {patient.city ? `${patient.city} - ${patient.state || ""}` : "-"}
-            </Text>
+
+
+          <View style={styles.twoColumns}>
+            <View style={styles.column}>
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Telefone:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{formatPhone(patient.phone)}</Text>
+              </View>
+              
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>CEP:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{patient.zip_code || "-"}</Text>
+              </View>
+            </View>
+
+            <View style={styles.columnLast}>
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Endereço:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>
+                  {(() => {
+                    if (!patient.street) return "-";
+                    if (!patient.neighborhood) return patient.street;
+                    return `${patient.street} - ${patient.neighborhood}`;
+                  })()}
+                </Text>
+              </View>
+              
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Cidade:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>
+                  {patient.city ? `${patient.city} - ${patient.state || ""}` : "-"}
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
 
@@ -225,38 +243,46 @@ const AnamnesisDocument = ({
           <View style={styles.section}>
             <Text style={styles.subtitle}>Dados do Responsável</Text>
             
-            <View style={styles.patientDataRow}>
-              <Text style={[styles.text, styles.patientDataLabel]}>Nome:</Text>
-              <Text style={[styles.text, styles.patientDataValue]}>{patient.responsible_name || "-"}</Text>
+            <View style={styles.twoColumns}>
+              {/* Coluna Esquerda */}
+              <View style={styles.column}>
+                <View style={styles.patientDataRow}>
+                  <Text style={[styles.text, styles.patientDataLabel]}>Nome:</Text>
+                  <Text style={[styles.text, styles.patientDataValue]}>{patient.responsible_name || "-"}</Text>
+                </View>
+                
+                {patient.responsible_cpf && (
+                  <View style={styles.patientDataRow}>
+                    <Text style={[styles.text, styles.patientDataLabel]}>CPF:</Text>
+                    <Text style={[styles.text, styles.patientDataValue]}>{formatCPF(patient.responsible_cpf)}</Text>
+                  </View>
+                )}
+
+              {patient.responsible_relationship && (
+                  <View style={styles.patientDataRow}>
+                    <Text style={[styles.text, styles.patientDataLabel]}>Parentesco:</Text>
+                    <Text style={[styles.text, styles.patientDataValue]}>{patient.responsible_relationship}</Text>
+                  </View>
+                )}
+              </View>
+              
+              {/* Coluna Direita */}
+              <View style={styles.columnLast}>
+                {patient.responsible_phone && (
+                  <View style={styles.patientDataRow}>
+                    <Text style={[styles.text, styles.patientDataLabel]}>Telefone:</Text>
+                    <Text style={[styles.text, styles.patientDataValue]}>{formatPhone(patient.responsible_phone)}</Text>
+                  </View>
+                )}
+                
+                {patient.responsible_email && (
+                  <View style={styles.patientDataRow}>
+                    <Text style={[styles.text, styles.patientDataLabel]}>E-mail:</Text>
+                    <Text style={[styles.text, styles.patientDataValue]}>{patient.responsible_email}</Text>
+                  </View>
+                )}
+              </View>
             </View>
-            
-            {patient.responsible_cpf && (
-              <View style={styles.patientDataRow}>
-                <Text style={[styles.text, styles.patientDataLabel]}>CPF:</Text>
-                <Text style={[styles.text, styles.patientDataValue]}>{formatCPF(patient.responsible_cpf)}</Text>
-              </View>
-            )}
-            
-            {patient.responsible_phone && (
-              <View style={styles.patientDataRow}>
-                <Text style={[styles.text, styles.patientDataLabel]}>Telefone:</Text>
-                <Text style={[styles.text, styles.patientDataValue]}>{formatPhone(patient.responsible_phone)}</Text>
-              </View>
-            )}
-            
-            {patient.responsible_email && (
-              <View style={styles.patientDataRow}>
-                <Text style={[styles.text, styles.patientDataLabel]}>E-mail:</Text>
-                <Text style={[styles.text, styles.patientDataValue]}>{patient.responsible_email}</Text>
-              </View>
-            )}
-            
-            {patient.responsible_relationship && (
-              <View style={styles.patientDataRow}>
-                <Text style={[styles.text, styles.patientDataLabel]}>Grau de Parentesco:</Text>
-                <Text style={[styles.text, styles.patientDataValue]}>{patient.responsible_relationship}</Text>
-              </View>
-            )}
           </View>
         )}
 
@@ -266,19 +292,27 @@ const AnamnesisDocument = ({
         <View style={styles.section}>
           <Text style={styles.subtitle}>Plano de Saúde</Text>
           
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Número da Carteirinha:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{patient.plan_card_number || "-"}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>Titular do Plano:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{patient.plan_holder || "-"}</Text>
-          </View>
-          
-          <View style={styles.patientDataRow}>
-            <Text style={[styles.text, styles.patientDataLabel]}>CPF/Documento do Titular:</Text>
-            <Text style={[styles.text, styles.patientDataValue]}>{formatDocument(patient.plan_document)}</Text>
+          <View style={styles.twoColumns}>
+            {/* Coluna Esquerda */}
+            <View style={styles.column}>
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>N° da Carteirinha:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{patient.plan_card_number || "-"}</Text>
+              </View>
+              
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Titular:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{patient.plan_holder || "-"}</Text>
+              </View>
+            </View>
+            
+            {/* Coluna Direita */}
+            <View style={styles.columnLast}>
+              <View style={styles.patientDataRow}>
+                <Text style={[styles.text, styles.patientDataLabel]}>Documento:</Text>
+                <Text style={[styles.text, styles.patientDataValue]}>{formatDocument(patient.plan_document)}</Text>
+              </View>
+            </View>
           </View>
         </View>
 
