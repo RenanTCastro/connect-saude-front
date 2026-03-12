@@ -1,0 +1,18 @@
+/* Botões fixos - ajuste para menu lateral expandido (200px) */
+.patient-form-actions {
+  left: 200px !important;
+}
+
+/* Quando o menu lateral está colapsado (80px) - usando seletor mais genérico */
+body .ant-layout-sider-collapsed ~ .ant-layout .patient-form-actions,
+body .ant-layout-sider-collapsed ~ * .patient-form-actions,
+.ant-layout-sider-collapsed ~ * .patient-form-actions {
+  left: 80px !important;
+}
+
+/* Em mobile, o menu não aparece, então os botões ocupam toda a largura */
+@media (max-width: 768px) {
+  .patient-form-actions {
+    left: 0 !important;
+  }
+}
