@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Card,
   Typography,
@@ -30,21 +30,25 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 import "./ImagesTab.css";
+import {
+  requestUploadUrl,
+  confirmUpload,
+  getAttachments,
+  getDownloadUrl,
+  deleteAttachment,
+  createFolder,
+  updateFolder,
+  deleteFolder,
+  moveAttachment,
+} from "../../../services/attachmentService";
 
 const { Title, Text } = Typography;
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB em bytes
 
 export default function ImagesTab({ patientId }) {
-  const [folders, setFolders] = useState([
-    { id: "1", name: "Radiografias", parentId: null },
-    { id: "2", name: "Fotos Clínicas", parentId: null },
-    { id: "3", name: "Documentos", parentId: null },
-  ]);
-  const [images, setImages] = useState([
-    { id: "img1", name: "imagem1.jpg", url: "https://via.placeholder.com/300x200", folderId: "1", type: "image" },
-    { id: "img2", name: "imagem2.jpg", url: "https://via.placeholder.com/300x200", folderId: "1", type: "image" },
-  ]);
+  const [folders, setFolders] = useState([]);
+  const [images, setImages] = useState([]);
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
   const [isEditFolderModalOpen, setIsEditFolderModalOpen] = useState(false);
@@ -54,11 +58,60 @@ export default function ImagesTab({ patientId }) {
   const [draggedImage, setDraggedImage] = useState(null);
   const [draggedOverFolder, setDraggedOverFolder] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [imageUrls, setImageUrls] = useState({}); // Mapeia imageId -> downloadUrl
+  const [loadingImages, setLoadingImages] = useState(new Set());
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  // Carregar URL de download de uma imagem
+  const loadImageUrl = async (imageId) => {
+    if (imageUrls[imageId] || loadingImages.has(imageId)) return;
+    
+    setLoadingImages((prev) => new Set(prev).add(imageId));
+    try {
+      const { downloadUrl } = await getDownloadUrl(imageId);
+      setImageUrls((prev) => ({ ...prev, [imageId]: downloadUrl }));
+    } catch (error) {
+      console.error("Erro ao carregar URL da imagem:", error);
+    } finally {
+      setLoadingImages((prev) => {
+        const next = new Set(prev);
+        next.delete(imageId);
+        return next;
+      });
+    }
+  };
+
+  // Carregar pastas e anexos do backend
+  const loadAttachments = async () => {
+    if (!patientId) return;
+    
+    setLoading(true);
+    try {
+      const data = await getAttachments(patientId, currentFolderId);
+      setFolders(data.folders || []);
+      setImages(data.attachments || []);
+      
+      // Carregar URLs de download para todas as imagens
+      const imageAttachments = (data.attachments || []).filter((img) => img.file_type === "image");
+      imageAttachments.forEach((img) => {
+        loadImageUrl(img.id);
+      });
+    } catch (error) {
+      console.error("Erro ao carregar anexos:", error);
+      messageApi.error("Erro ao carregar anexos");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAttachments();
+  }, [patientId, currentFolderId]);
 
   const getCurrentPath = () => {
     if (!currentFolderId) return [];
@@ -66,17 +119,27 @@ export default function ImagesTab({ patientId }) {
     let folder = folders.find((f) => f.id === currentFolderId);
     while (folder) {
       path.unshift(folder);
-      folder = folder.parentId ? folders.find((f) => f.id === folder.parentId) : null;
+      folder = folder.parent_id ? folders.find((f) => f.id === folder.parent_id) : null;
     }
     return path;
   };
 
   const getCurrentFolders = () => {
-    return folders.filter((f) => f.parentId === currentFolderId);
+    return folders.filter((f) => {
+      if (currentFolderId === null) {
+        return f.parent_id === null;
+      }
+      return f.parent_id === currentFolderId;
+    });
   };
 
   const getCurrentImages = () => {
-    return images.filter((img) => img.folderId === currentFolderId);
+    return images.filter((img) => {
+      if (currentFolderId === null) {
+        return img.folder_id === null;
+      }
+      return img.folder_id === currentFolderId;
+    });
   };
 
   const handleCreateFolder = () => {
@@ -87,17 +150,14 @@ export default function ImagesTab({ patientId }) {
   const handleCreateFolderSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const newFolder = {
-        id: Date.now().toString(),
-        name: values.name,
-        parentId: currentFolderId,
-      };
-      setFolders([...folders, newFolder]);
+      await createFolder(patientId, values.name, currentFolderId);
       messageApi.success("Pasta criada com sucesso!");
       setIsCreateFolderModalOpen(false);
       form.resetFields();
+      loadAttachments();
     } catch (error) {
       console.error(error);
+      messageApi.error(error.response?.data?.error || "Erro ao criar pasta");
     }
   };
 
@@ -110,47 +170,48 @@ export default function ImagesTab({ patientId }) {
   const handleEditFolderSubmit = async () => {
     try {
       const values = await editForm.validateFields();
-      setFolders(
-        folders.map((f) => (f.id === editingFolder.id ? { ...f, name: values.name } : f))
-      );
+      await updateFolder(editingFolder.id, values.name);
       messageApi.success("Nome da pasta atualizado!");
       setIsEditFolderModalOpen(false);
       setEditingFolder(null);
       editForm.resetFields();
+      loadAttachments();
     } catch (error) {
       console.error(error);
+      messageApi.error(error.response?.data?.error || "Erro ao atualizar pasta");
     }
   };
 
-  const handleDeleteFolder = (folderId) => {
-    // Deletar pasta e todas as subpastas
-    const deleteFolderRecursive = (id) => {
-      const subfolders = folders.filter((f) => f.parentId === id);
-      subfolders.forEach((subfolder) => deleteFolderRecursive(subfolder.id));
-      setFolders((prev) => prev.filter((f) => f.id !== id));
-    };
-    deleteFolderRecursive(folderId);
-    // Mover imagens para a pasta raiz
-    setImages((prev) =>
-      prev.map((img) => (img.folderId === folderId ? { ...img, folderId: null } : img))
-    );
-    messageApi.success("Pasta excluída com sucesso!");
+  const handleDeleteFolder = async (folderId) => {
+    try {
+      await deleteFolder(folderId);
+      messageApi.success("Pasta excluída com sucesso!");
+      loadAttachments();
+    } catch (error) {
+      console.error(error);
+      messageApi.error(error.response?.data?.error || "Erro ao excluir pasta");
+    }
   };
 
-  const handleDeleteImage = (imageId) => {
-    setImages((prev) => {
-      const item = prev.find((img) => img.id === imageId);
-      if (item?.url && item.type === "document") {
-        URL.revokeObjectURL(item.url);
-      }
-      return prev.filter((img) => img.id !== imageId);
-    });
-    messageApi.success("Anexo excluído com sucesso!");
+  const handleDeleteImage = async (imageId) => {
+    try {
+      await deleteAttachment(imageId);
+      messageApi.success("Anexo excluído com sucesso!");
+      loadAttachments();
+    } catch (error) {
+      console.error(error);
+      messageApi.error(error.response?.data?.error || "Erro ao excluir anexo");
+    }
   };
 
-  const handleImageClick = (image) => {
+  const handleImageClick = async (image) => {
     setSelectedImage(image);
     setIsImageViewerOpen(true);
+    
+    // Carregar URL de download para imagens se ainda não estiver carregada
+    if (image.file_type === "image" && !imageUrls[image.id]) {
+      await loadImageUrl(image.id);
+    }
   };
 
   const getFileType = (file) => {
@@ -178,41 +239,54 @@ export default function ImagesTab({ patientId }) {
 
     setUploading(true);
     try {
-      // Simular upload - aqui você faria a chamada à API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // 1. Solicitar URL de upload
+      const uploadData = await requestUploadUrl(patientId, file, currentFolderId);
       
-      const fileType = getFileType(file);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d13a1be9-16a7-4807-ac4a-57af8f7d3bb6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ImagesTab.jsx:243',message:'Presigned URL recebida',data:{uploadUrl:uploadData.uploadUrl.substring(0,100)+'...',fileId:uploadData.fileId,fileName:file.name,fileSize:file.size,fileType:file.type},timestamp:Date.now(),runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       
-      if (fileType === "image") {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const newImage = {
-            id: Date.now().toString(),
-            name: file.name,
-            url: e.target.result,
-            folderId: currentFolderId,
-            type: "image",
-          };
-          setImages((prev) => [...prev, newImage]);
-          messageApi.success("Imagem adicionada com sucesso!");
-        };
-        reader.readAsDataURL(file);
-      } else {
-        // Para documentos, criar um objeto URL temporário ou usar blob
-        const url = URL.createObjectURL(file);
-        const newDocument = {
-          id: Date.now().toString(),
-          name: file.name,
-          url: url,
-          folderId: currentFolderId,
-          type: "document",
-          file: file, // Guardar referência do arquivo para download
-        };
-        setImages((prev) => [...prev, newDocument]);
-        messageApi.success("Documento adicionado com sucesso!");
+      // 2. Fazer upload direto para S3
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d13a1be9-16a7-4807-ac4a-57af8f7d3bb6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ImagesTab.jsx:246',message:'Iniciando upload para S3',data:{method:'PUT',hasBody:!!file,contentType:file.type||'application/octet-stream',urlDomain:new URL(uploadData.uploadUrl).hostname},timestamp:Date.now(),runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
+      const uploadResponse = await fetch(uploadData.uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: {
+          "Content-Type": file.type || "application/octet-stream",
+        },
+      });
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/d13a1be9-16a7-4807-ac4a-57af8f7d3bb6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ImagesTab.jsx:254',message:'Resposta do upload S3',data:{status:uploadResponse.status,statusText:uploadResponse.statusText,ok:uploadResponse.ok,headers:Object.fromEntries(uploadResponse.headers.entries())},timestamp:Date.now(),runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/d13a1be9-16a7-4807-ac4a-57af8f7d3bb6',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ImagesTab.jsx:256',message:'Erro no upload S3',data:{status:uploadResponse.status,statusText:uploadResponse.statusText,errorText:errorText.substring(0,200)},timestamp:Date.now(),runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        throw new Error(`Erro ao fazer upload para S3: ${uploadResponse.status} ${uploadResponse.statusText}`);
       }
+
+      // 3. Confirmar upload e salvar no banco
+      await confirmUpload(patientId, {
+        fileId: uploadData.fileId,
+        fileName: file.name,
+        fileType: uploadData.fileType,
+        fileSize: file.size,
+        folderId: currentFolderId,
+        s3Key: uploadData.s3Key,
+        mimeType: file.type,
+      });
+
+      messageApi.success("Arquivo adicionado com sucesso!");
+      loadAttachments();
     } catch (error) {
-      messageApi.error("Erro ao fazer upload do arquivo");
+      console.error("Erro ao fazer upload:", error);
+      messageApi.error(error.response?.data?.error || "Erro ao fazer upload do arquivo");
     } finally {
       setUploading(false);
     }
@@ -255,15 +329,17 @@ export default function ImagesTab({ patientId }) {
     setDraggedOverFolder(null);
   };
 
-  const handleDrop = (e, targetFolderId) => {
+  const handleDrop = async (e, targetFolderId) => {
     e.preventDefault();
     if (draggedImage) {
-      setImages((prev) =>
-        prev.map((img) =>
-          img.id === draggedImage.id ? { ...img, folderId: targetFolderId } : img
-        )
-      );
-      messageApi.success("Imagem movida com sucesso!");
+      try {
+        await moveAttachment(draggedImage.id, targetFolderId);
+        messageApi.success("Anexo movido com sucesso!");
+        loadAttachments();
+      } catch (error) {
+        console.error(error);
+        messageApi.error(error.response?.data?.error || "Erro ao mover anexo");
+      }
     }
     setDraggedImage(null);
     setDraggedOverFolder(null);
@@ -273,30 +349,30 @@ export default function ImagesTab({ patientId }) {
     setCurrentFolderId(folderId);
   };
 
-  const handleDownloadImage = (image) => {
+  const handleDownloadImage = async (image) => {
     try {
-      if (image.type === "document" && image.file) {
-        // Para documentos, usar o arquivo original
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(image.file);
-        link.download = image.name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-      } else {
-        // Para imagens, usar a URL
-        const link = document.createElement("a");
-        link.href = image.url;
-        link.download = image.name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      const { downloadUrl, fileName } = await getDownloadUrl(image.id);
+      
+      // Fazer fetch do arquivo e criar blob para download real
+      const response = await fetch(downloadUrl);
+      if (!response.ok) {
+        throw new Error("Erro ao baixar arquivo");
       }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
       messageApi.success("Download iniciado!");
     } catch (error) {
       console.error("Erro ao fazer download:", error);
-      messageApi.error("Erro ao fazer download do anexo");
+      messageApi.error(error.response?.data?.error || "Erro ao fazer download do anexo");
     }
   };
 
@@ -377,6 +453,12 @@ export default function ImagesTab({ patientId }) {
       )}
 
       <div className="images-content">
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <Spin size="large" />
+          </div>
+        ) : (
+          <>
         {currentFolders.length > 0 && (
           <div className="folders-section">
             <Title level={5}>Pastas</Title>
@@ -386,7 +468,7 @@ export default function ImagesTab({ patientId }) {
                   key={folder.id}
                   className={`folder-card ${draggedOverFolder === folder.id ? "drag-over" : ""}`}
                   hoverable
-                  onDoubleClick={() => setCurrentFolderId(folder.id)}
+                  onClick={() => setCurrentFolderId(folder.id)}
                   onDragOver={(e) => handleDragOver(e, folder.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, folder.id)}
@@ -439,21 +521,28 @@ export default function ImagesTab({ patientId }) {
                   hoverable
                   cover={
                     <div 
-                      className={`image-preview ${image.type === "document" ? "document-preview" : ""}`}
+                      className={`image-preview ${image.file_type === "document" ? "document-preview" : ""}`}
                       onClick={() => handleImageClick(image)}
                     >
-                      {image.type === "image" ? (
-                        <img
-                          alt={image.name}
-                          src={image.url}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, image)}
-                        />
+                      {image.file_type === "image" ? (
+                        imageUrls[image.id] ? (
+                          <img
+                            alt={image.file_name}
+                            src={imageUrls[image.id]}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, image)}
+                            style={{ width: "100%", height: "200px", objectFit: "cover" }}
+                          />
+                        ) : (
+                          <div style={{ width: "100%", height: "200px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <Spin />
+                          </div>
+                        )
                       ) : (
                         <div className="document-preview-content" draggable onDragStart={(e) => handleDragStart(e, image)}>
-                          {getFileIcon(image.name, image.type)}
+                          {getFileIcon(image.file_name, image.file_type)}
                           <Text strong style={{ marginTop: 8, display: "block" }}>
-                            {image.name}
+                            {image.file_name}
                           </Text>
                         </div>
                       )}
@@ -476,11 +565,11 @@ export default function ImagesTab({ patientId }) {
                     </Popconfirm>,
                   ]}
                 >
-                  {image.type === "image" && (
+                  {image.file_type === "image" && (
                     <Card.Meta
                       title={
                         <Text ellipsis style={{ width: "100%" }}>
-                          {image.name}
+                          {image.file_name}
                         </Text>
                       }
                     />
@@ -496,6 +585,8 @@ export default function ImagesTab({ patientId }) {
             description="Esta pasta está vazia"
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
+        )}
+          </>
         )}
       </div>
 
@@ -553,7 +644,7 @@ export default function ImagesTab({ patientId }) {
           setIsImageViewerOpen(false);
           setSelectedImage(null);
         }}
-        footer={selectedImage?.type === "image" ? [
+        footer={selectedImage?.file_type === "image" ? [
           <Button
             key="download"
             type="primary"
@@ -569,18 +660,24 @@ export default function ImagesTab({ patientId }) {
       >
         {selectedImage && (
           <div className="image-viewer">
-            {selectedImage.type === "image" ? (
-              <Image
-                src={selectedImage.url}
-                alt={selectedImage.name}
-                style={{ maxHeight: "80vh", width: "100%" }}
-                preview={false}
-              />
+            {selectedImage.file_type === "image" ? (
+              imageUrls[selectedImage.id] ? (
+                <Image
+                  src={imageUrls[selectedImage.id]}
+                  alt={selectedImage.file_name}
+                  style={{ maxHeight: "80vh", width: "100%" }}
+                  preview={false}
+                />
+              ) : (
+                <div style={{ textAlign: "center", padding: "40px 0" }}>
+                  <Spin size="large" />
+                </div>
+              )
             ) : (
               <div style={{ textAlign: "center", padding: "40px 0" }}>
-                {getFileIcon(selectedImage.name, selectedImage.type)}
+                {getFileIcon(selectedImage.file_name, selectedImage.file_type)}
                 <div style={{ marginTop: 16 }}>
-                  <Text strong style={{ fontSize: 16 }}>{selectedImage.name}</Text>
+                  <Text strong style={{ fontSize: 16 }}>{selectedImage.file_name}</Text>
                 </div>
                 <div style={{ marginTop: 24 }}>
                   <Button
@@ -593,9 +690,9 @@ export default function ImagesTab({ patientId }) {
                 </div>
               </div>
             )}
-            {selectedImage.type === "image" && (
+            {selectedImage.file_type === "image" && (
               <div style={{ marginTop: 16, textAlign: "center" }}>
-                <Text strong>{selectedImage.name}</Text>
+                <Text strong>{selectedImage.file_name}</Text>
               </div>
             )}
           </div>
