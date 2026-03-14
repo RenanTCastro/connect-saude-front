@@ -21,6 +21,8 @@ import { fetchAddressByCEP } from "../../utils/cep";
 import InfoTab from "./tabs/InfoTab";
 import AnamnesisTab from "./tabs/AnamnesisTab";
 import IncomesTab from "./tabs/IncomesTab";
+import ImagesTab from "./tabs/ImagesTab";
+import DocumentsTab from "./tabs/DocumentsTab";
 import "./Styles.css";
 
 const { Title, Text } = Typography;
@@ -179,6 +181,16 @@ export default function PatientDetails() {
             key: "incomes",
             label: "Débitos",
             children: <IncomesTab patientId={id} />,
+          },
+          {
+            key: "images",
+            label: "Imagens",
+            children: <ImagesTab patientId={id} />,
+          },
+          {
+            key: "documents",
+            label: "Documentos",
+            children: <DocumentsTab patientId={id} />,
           },
         ]}
       />
