@@ -24,10 +24,16 @@ import {
   CameraOutlined,
   UploadOutlined,
   HomeOutlined,
+  DownloadOutlined,
+  FilePdfOutlined,
+  FileOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import "./ImagesTab.css";
 
 const { Title, Text } = Typography;
+
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB em bytes
 
 export default function ImagesTab({ patientId }) {
   const [folders, setFolders] = useState([
@@ -36,8 +42,8 @@ export default function ImagesTab({ patientId }) {
     { id: "3", name: "Documentos", parentId: null },
   ]);
   const [images, setImages] = useState([
-    { id: "img1", name: "imagem1.jpg", url: "https://via.placeholder.com/300x200", folderId: "1" },
-    { id: "img2", name: "imagem2.jpg", url: "https://via.placeholder.com/300x200", folderId: "1" },
+    { id: "img1", name: "imagem1.jpg", url: "https://via.placeholder.com/300x200", folderId: "1", type: "image" },
+    { id: "img2", name: "imagem2.jpg", url: "https://via.placeholder.com/300x200", folderId: "1", type: "image" },
   ]);
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [isCreateFolderModalOpen, setIsCreateFolderModalOpen] = useState(false);
@@ -132,8 +138,14 @@ export default function ImagesTab({ patientId }) {
   };
 
   const handleDeleteImage = (imageId) => {
-    setImages((prev) => prev.filter((img) => img.id !== imageId));
-    messageApi.success("Imagem excluída com sucesso!");
+    setImages((prev) => {
+      const item = prev.find((img) => img.id === imageId);
+      if (item?.url && item.type === "document") {
+        URL.revokeObjectURL(item.url);
+      }
+      return prev.filter((img) => img.id !== imageId);
+    });
+    messageApi.success("Anexo excluído com sucesso!");
   };
 
   const handleImageClick = (image) => {
@@ -141,26 +153,66 @@ export default function ImagesTab({ patientId }) {
     setIsImageViewerOpen(true);
   };
 
+  const getFileType = (file) => {
+    if (file.type.startsWith("image/")) {
+      return "image";
+    }
+    return "document";
+  };
+
+  const getFileIcon = (fileName, type) => {
+    if (type === "image") return null;
+    const ext = fileName.split(".").pop()?.toLowerCase();
+    if (ext === "pdf") return <FilePdfOutlined style={{ fontSize: 48, color: "#ff4d4f" }} />;
+    if (["doc", "docx"].includes(ext)) return <FileTextOutlined style={{ fontSize: 48, color: "#1890ff" }} />;
+    return <FileOutlined style={{ fontSize: 48, color: "#8c8c8c" }} />;
+  };
+
   const handleFileUpload = async (file) => {
+    // Validar tamanho do arquivo
+    if (file.size > MAX_FILE_SIZE) {
+      const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      messageApi.error(`Arquivo muito grande! O tamanho máximo permitido é 20MB. O arquivo "${file.name}" tem ${fileSizeMB}MB.`);
+      return;
+    }
+
     setUploading(true);
     try {
       // Simular upload - aqui você faria a chamada à API
       await new Promise((resolve) => setTimeout(resolve, 1000));
       
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const newImage = {
+      const fileType = getFileType(file);
+      
+      if (fileType === "image") {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const newImage = {
+            id: Date.now().toString(),
+            name: file.name,
+            url: e.target.result,
+            folderId: currentFolderId,
+            type: "image",
+          };
+          setImages((prev) => [...prev, newImage]);
+          messageApi.success("Imagem adicionada com sucesso!");
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Para documentos, criar um objeto URL temporário ou usar blob
+        const url = URL.createObjectURL(file);
+        const newDocument = {
           id: Date.now().toString(),
           name: file.name,
-          url: e.target.result,
+          url: url,
           folderId: currentFolderId,
+          type: "document",
+          file: file, // Guardar referência do arquivo para download
         };
-        setImages((prev) => [...prev, newImage]);
-        messageApi.success("Imagem adicionada com sucesso!");
-      };
-      reader.readAsDataURL(file);
+        setImages((prev) => [...prev, newDocument]);
+        messageApi.success("Documento adicionado com sucesso!");
+      }
     } catch (error) {
-      messageApi.error("Erro ao fazer upload da imagem");
+      messageApi.error("Erro ao fazer upload do arquivo");
     } finally {
       setUploading(false);
     }
@@ -182,9 +234,7 @@ export default function ImagesTab({ patientId }) {
   const handleFileInputChange = (e) => {
     const files = Array.from(e.target.files || []);
     files.forEach((file) => {
-      if (file.type.startsWith("image/")) {
-        handleFileUpload(file);
-      }
+      handleFileUpload(file);
     });
     // Reset input
     e.target.value = "";
@@ -223,6 +273,33 @@ export default function ImagesTab({ patientId }) {
     setCurrentFolderId(folderId);
   };
 
+  const handleDownloadImage = (image) => {
+    try {
+      if (image.type === "document" && image.file) {
+        // Para documentos, usar o arquivo original
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(image.file);
+        link.download = image.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+      } else {
+        // Para imagens, usar a URL
+        const link = document.createElement("a");
+        link.href = image.url;
+        link.download = image.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      messageApi.success("Download iniciado!");
+    } catch (error) {
+      console.error("Erro ao fazer download:", error);
+      messageApi.error("Erro ao fazer download do anexo");
+    }
+  };
+
   const currentPath = getCurrentPath();
   const currentFolders = getCurrentFolders();
   const currentImages = getCurrentImages();
@@ -245,7 +322,7 @@ export default function ImagesTab({ patientId }) {
             onClick={() => fileInputRef.current?.click()}
             loading={uploading}
           >
-            Adicionar Imagem
+            Adicionar Anexo
           </Button>
           <Button
             icon={<CameraOutlined />}
@@ -259,7 +336,7 @@ export default function ImagesTab({ patientId }) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,.pdf,.doc,.docx,.txt,.xls,.xlsx"
         multiple
         style={{ display: "none" }}
         onChange={handleFileInputChange}
@@ -353,7 +430,7 @@ export default function ImagesTab({ patientId }) {
 
         {currentImages.length > 0 && (
           <div className="images-section">
-            <Title level={5}>Imagens</Title>
+            <Title level={5}>Anexos</Title>
             <div className="images-grid">
               {currentImages.map((image) => (
                 <Card
@@ -361,19 +438,36 @@ export default function ImagesTab({ patientId }) {
                   className="image-card"
                   hoverable
                   cover={
-                    <div className="image-preview" onClick={() => handleImageClick(image)}>
-                      <img
-                        alt={image.name}
-                        src={image.url}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, image)}
-                      />
+                    <div 
+                      className={`image-preview ${image.type === "document" ? "document-preview" : ""}`}
+                      onClick={() => handleImageClick(image)}
+                    >
+                      {image.type === "image" ? (
+                        <img
+                          alt={image.name}
+                          src={image.url}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, image)}
+                        />
+                      ) : (
+                        <div className="document-preview-content" draggable onDragStart={(e) => handleDragStart(e, image)}>
+                          {getFileIcon(image.name, image.type)}
+                          <Text strong style={{ marginTop: 8, display: "block" }}>
+                            {image.name}
+                          </Text>
+                        </div>
+                      )}
                     </div>
                   }
                   actions={[
+                    <DownloadOutlined
+                      key="download"
+                      onClick={() => handleDownloadImage(image)}
+                      style={{ color: "#1890ff" }}
+                    />,
                     <Popconfirm
                       key="delete"
-                      title="Tem certeza que deseja excluir esta imagem?"
+                      title="Tem certeza que deseja excluir este anexo?"
                       onConfirm={() => handleDeleteImage(image.id)}
                       okText="Sim"
                       cancelText="Não"
@@ -382,13 +476,15 @@ export default function ImagesTab({ patientId }) {
                     </Popconfirm>,
                   ]}
                 >
-                  <Card.Meta
-                    title={
-                      <Text ellipsis style={{ width: "100%" }}>
-                        {image.name}
-                      </Text>
-                    }
-                  />
+                  {image.type === "image" && (
+                    <Card.Meta
+                      title={
+                        <Text ellipsis style={{ width: "100%" }}>
+                          {image.name}
+                        </Text>
+                      }
+                    />
+                  )}
                 </Card>
               ))}
             </div>
@@ -457,22 +553,51 @@ export default function ImagesTab({ patientId }) {
           setIsImageViewerOpen(false);
           setSelectedImage(null);
         }}
-        footer={null}
+        footer={selectedImage?.type === "image" ? [
+          <Button
+            key="download"
+            type="primary"
+            icon={<DownloadOutlined />}
+            onClick={() => selectedImage && handleDownloadImage(selectedImage)}
+          >
+            Baixar Anexo
+          </Button>,
+        ] : null}
         width="90%"
         style={{ top: 20 }}
         centered
       >
         {selectedImage && (
           <div className="image-viewer">
-            <Image
-              src={selectedImage.url}
-              alt={selectedImage.name}
-              style={{ maxHeight: "80vh", width: "100%" }}
-              preview={false}
-            />
-            <div style={{ marginTop: 16, textAlign: "center" }}>
-              <Text strong>{selectedImage.name}</Text>
-            </div>
+            {selectedImage.type === "image" ? (
+              <Image
+                src={selectedImage.url}
+                alt={selectedImage.name}
+                style={{ maxHeight: "80vh", width: "100%" }}
+                preview={false}
+              />
+            ) : (
+              <div style={{ textAlign: "center", padding: "40px 0" }}>
+                {getFileIcon(selectedImage.name, selectedImage.type)}
+                <div style={{ marginTop: 16 }}>
+                  <Text strong style={{ fontSize: 16 }}>{selectedImage.name}</Text>
+                </div>
+                <div style={{ marginTop: 24 }}>
+                  <Button
+                    type="primary"
+                    icon={<DownloadOutlined />}
+                    onClick={() => handleDownloadImage(selectedImage)}
+                  >
+                    Baixar Documento
+                  </Button>
+                </div>
+              </div>
+            )}
+            {selectedImage.type === "image" && (
+              <div style={{ marginTop: 16, textAlign: "center" }}>
+                <Text strong>{selectedImage.name}</Text>
+              </div>
+            )}
           </div>
         )}
       </Modal>

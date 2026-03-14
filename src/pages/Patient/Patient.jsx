@@ -184,7 +184,7 @@ export default function PatientDetails() {
           },
           {
             key: "images",
-            label: "Imagens",
+            label: "Anexos",
             children: <ImagesTab patientId={id} />,
           },
           {
