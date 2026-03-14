@@ -21,6 +21,7 @@ import { ArrowLeftOutlined, EditOutlined, DeleteOutlined } from "@ant-design/ico
 import dayjs from "dayjs";
 import api from "../../services/api";
 import PatientForm from "../../components/PatientForm/PatientForm";
+import { fetchAddressByCEP } from "../../utils/cep";
 import "./Styles.css";
 
 const { Title, Text } = Typography;
@@ -113,6 +114,26 @@ export default function PatientDetails() {
     setIsEditModalOpen(true);
   };
 
+  const handleCEPBlur = async (e) => {
+    const cep = e.target.value;
+    if (!cep || cep.replace(/\D/g, "").length !== 8) {
+      return;
+    }
+
+    const addressData = await fetchAddressByCEP(cep);
+    if (addressData) {
+      form.setFieldsValue({
+        street: addressData.street,
+        neighborhood: addressData.neighborhood,
+        city: addressData.city,
+        state: addressData.state,
+      });
+      messageApi.success("Endereço preenchido automaticamente!");
+    } else {
+      messageApi.warning("CEP não encontrado. Por favor, preencha o endereço manualmente.");
+    }
+  };
+
   const handleUpdate = async () => {
     try {
       const values = await form.validateFields();
@@ -201,6 +222,9 @@ export default function PatientDetails() {
                       <p><Text strong>Celular:</Text> {formatPhone(patient?.phone)}</p>
                       <p><Text strong>CEP:</Text> {patient?.zip_code || "-"}</p>
                       <p><Text strong>Endereço:</Text> {patient?.street}</p>
+                      {patient?.complement && (
+                        <p><Text strong>Complemento:</Text> {patient.complement}</p>
+                      )}
                       <p><Text strong>Bairro:</Text> {patient?.neighborhood}</p>
                       <p><Text strong>Cidade:</Text> {patient?.city} - {patient?.state}</p>
                     </Card>
@@ -475,10 +499,13 @@ export default function PatientDetails() {
                       >
                         <Input placeholder="RG (opcional, até 11 dígitos)" maxLength={11}/>
                       </Form.Item>
+                    </div>
 
+                    <div className="form-row" style={{ display: "flex", gap: 12 }}>
                       <Form.Item
                         name="phone"
                         label="Telefone"
+                        style={{ flex: 1 }}
                         rules={[
                           { required: true, message: "Por favor, insira o número de telefone!" },
                           { pattern: /^[0-9]{10,11}$/, message: "Digite um número válido (somente números)." },
@@ -605,12 +632,20 @@ export default function PatientDetails() {
                         style={{ flex: "0.7" }}
                         className="form-item-responsive"
                       >
-                        <Input placeholder="CEP" maxLength={8}/>
+                        <Input 
+                          placeholder="CEP" 
+                          maxLength={8}
+                          onBlur={handleCEPBlur}
+                        />
                       </Form.Item>
                       <Form.Item name="street" label="Endereço" style={{ flex: 2 }} className="form-item-responsive">
                         <Input placeholder="Rua / Avenida" />
                       </Form.Item>
                     </div>
+
+                    <Form.Item name="complement" label="Complemento" className="form-item-responsive">
+                      <Input placeholder="Apartamento, bloco, sala, etc." maxLength={255}/>
+                    </Form.Item>
 
                     <div className="form-row" style={{ display: "flex", gap: 12 }}>
                       <Form.Item name="neighborhood" label="Bairro" style={{ flex: 1 }} className="form-item-responsive">

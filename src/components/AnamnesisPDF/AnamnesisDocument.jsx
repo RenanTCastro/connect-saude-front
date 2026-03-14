@@ -187,13 +187,6 @@ const AnamnesisDocument = ({
               </View>
               
               <View style={styles.patientDataRow}>
-                <Text style={[styles.text, styles.patientDataLabel]}>Idade:</Text>
-                <Text style={[styles.text, styles.patientDataValue]}>
-                  {patient.age ? `${patient.age} anos` : "-"}
-                </Text>
-              </View>
-              
-              <View style={styles.patientDataRow}>
                 <Text style={[styles.text, styles.patientDataLabel]}>Sexo:</Text>
                 <Text style={[styles.text, styles.patientDataValue]}>{patient.gender || "-"}</Text>
               </View>
@@ -220,8 +213,14 @@ const AnamnesisDocument = ({
                 <Text style={[styles.text, styles.patientDataValue]}>
                   {(() => {
                     if (!patient.street) return "-";
-                    if (!patient.neighborhood) return patient.street;
-                    return `${patient.street} - ${patient.neighborhood}`;
+                    let address = patient.street;
+                    if (patient.complement) {
+                      address += `, ${patient.complement}`;
+                    }
+                    if (patient.neighborhood) {
+                      address += ` - ${patient.neighborhood}`;
+                    }
+                    return address;
                   })()}
                 </Text>
               </View>

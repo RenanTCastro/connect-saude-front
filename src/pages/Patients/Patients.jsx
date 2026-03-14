@@ -16,6 +16,7 @@ import {
 import { EyeOutlined, SearchOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { fetchAddressByCEP } from "../../utils/cep";
 
 import "./Styles.css";
 
@@ -62,6 +63,26 @@ export default function Patients() {
     fetchPatients();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleCEPBlur = async (e) => {
+    const cep = e.target.value;
+    if (!cep || cep.replace(/\D/g, "").length !== 8) {
+      return;
+    }
+
+    const addressData = await fetchAddressByCEP(cep);
+    if (addressData) {
+      form.setFieldsValue({
+        street: addressData.street,
+        neighborhood: addressData.neighborhood,
+        city: addressData.city,
+        state: addressData.state,
+      });
+      messageApi.success("Endereço preenchido automaticamente!");
+    } else {
+      messageApi.warning("CEP não encontrado. Por favor, preencha o endereço manualmente.");
+    }
+  };
 
   const handleCreate = async () => {
     try {
@@ -219,10 +240,13 @@ export default function Patients() {
                       >
                         <Input placeholder="RG (opcional, até 11 dígitos)" maxLength={11}/>
                       </Form.Item>
+                    </div>
 
+                    <div style={{ display: "flex", gap: 12 }}>
                       <Form.Item
                         name="phone"
                         label="Telefone"
+                        style={{ flex: 1 }}
                         rules={[
                           { required: true, message: "Por favor, insira o número de telefone!" },
                           { pattern: /^[0-9]{10,11}$/, message: "Digite um número válido (somente números)." },
@@ -334,7 +358,7 @@ export default function Patients() {
                 children: (
                   <>
                     <div style={{ display: "flex", gap: 12 }}>
-                      <Form.Item 
+                      <Form.Item  
                         name="zip_code" 
                         label="CEP" 
                         rules={[
@@ -342,12 +366,20 @@ export default function Patients() {
                         ]}
                         style={{ flex: "0.7" }}
                       >
-                        <Input placeholder="CEP" maxLength={8}/>
+                        <Input 
+                          placeholder="CEP" 
+                          maxLength={8}
+                          onBlur={handleCEPBlur}
+                        />
                       </Form.Item>
                       <Form.Item name="street" label="Endereço" style={{ flex: 2 }}>
                         <Input placeholder="Rua / Avenida" />
                       </Form.Item>
                     </div>
+
+                    <Form.Item name="complement" label="Complemento">
+                      <Input placeholder="Apartamento, bloco, sala, etc." maxLength={255}/>
+                    </Form.Item>
 
                     <div style={{ display: "flex", gap: 12 }}>
                       <Form.Item name="neighborhood" label="Bairro" style={{ flex: 1 }}>

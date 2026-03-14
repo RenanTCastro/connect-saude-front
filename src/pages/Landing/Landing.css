@@ -233,6 +233,39 @@
   transform: translateY(-4px);
 }
 
+.feature-card-highlighted {
+  border: 2px solid #25d366 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fff4 100%) !important;
+  position: relative;
+}
+
+.feature-card-highlighted:hover {
+  border-color: #20ba5a !important;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.25) !important;
+  transform: translateY(-6px) !important;
+}
+
+.feature-badge {
+  position: absolute;
+  top: -12px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: #ffffff;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+  z-index: 10;
+}
+
+.feature-badge svg {
+  font-size: 14px;
+}
+
 .feature-icon {
   font-size: 48px;
   color: #1677ff;
@@ -257,6 +290,177 @@
   color: #666666;
   line-height: 1.6;
   font-size: 16px;
+}
+
+/* WhatsApp Showcase Section */
+.whatsapp-showcase-section {
+  padding: 80px 24px;
+  background: linear-gradient(135deg, #f0fff4 0%, #ffffff 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.whatsapp-showcase-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 50%, rgba(37, 211, 102, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.whatsapp-showcase-content {
+  position: relative;
+  z-index: 1;
+}
+
+.whatsapp-badge-large {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: #ffffff;
+  border: 2px solid #25d366;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 16px;
+  color: #25d366;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 12px rgba(37, 211, 102, 0.15);
+}
+
+.whatsapp-title {
+  font-size: 40px;
+  font-weight: 700;
+  color: #333333;
+  margin-bottom: 24px;
+  line-height: 1.2;
+}
+
+.whatsapp-description {
+  font-size: 18px;
+  color: #666666;
+  line-height: 1.8;
+  margin-bottom: 32px;
+}
+
+.whatsapp-benefits-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.whatsapp-benefits-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 16px;
+  color: #333333;
+}
+
+.whatsapp-benefit-icon {
+  font-size: 20px;
+  color: #25d366;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.whatsapp-mockup-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.whatsapp-mockup {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  max-width: 360px;
+  width: 100%;
+  border: 1px solid #e8e8e8;
+}
+
+.whatsapp-mockup-header {
+  background: #25d366;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.whatsapp-mockup-contact {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.whatsapp-mockup-contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.whatsapp-mockup-contact-info strong {
+  color: #ffffff;
+  font-size: 16px;
+}
+
+.whatsapp-mockup-contact-info .ant-typography {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.whatsapp-mockup-messages {
+  padding: 20px;
+  background: #ece5dd;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.whatsapp-message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 75%;
+}
+
+.whatsapp-message-received {
+  align-self: flex-start;
+}
+
+.whatsapp-message-bubble {
+  background: #ffffff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.whatsapp-message-bubble::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 8px 12px 0;
+  border-color: transparent #ffffff transparent transparent;
+}
+
+.whatsapp-message-time {
+  font-size: 11px;
+  color: #999999;
+  padding-left: 4px;
 }
 
 /* Benefits Section */
@@ -658,10 +862,23 @@ html {
     font-size: 28px;
   }
 
+  .whatsapp-title {
+    font-size: 28px;
+  }
+
+  .whatsapp-description {
+    font-size: 16px;
+  }
+
+  .whatsapp-mockup {
+    max-width: 100%;
+  }
+
   .features-section,
   .benefits-section,
   .testimonials-section,
-  .cta-section {
+  .cta-section,
+  .whatsapp-showcase-section {
     padding: 60px 16px;
   }
 
@@ -722,6 +939,20 @@ html {
     font-size: 24px;
   }
 
+  .whatsapp-title {
+    font-size: 24px;
+  }
+
+  .whatsapp-badge-large {
+    font-size: 14px;
+    padding: 10px 20px;
+  }
+
+  .whatsapp-badge-large svg {
+    width: 24px;
+    height: 24px;
+  }
+
   .feature-card {
     padding: 24px;
   }
@@ -732,5 +963,10 @@ html {
 
   .testimonial-card {
     padding: 20px;
+  }
+
+  .whatsapp-mockup-messages {
+    min-height: 250px;
+    padding: 16px;
   }
 }
