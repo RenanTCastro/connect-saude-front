@@ -262,6 +262,10 @@
   min-width: 120px;
 }
 
+.appointment-date-picker {
+  min-width: 140px;
+}
+
 .appointment-btn-text {
   margin-left: 4px;
 }

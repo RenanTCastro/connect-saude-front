@@ -15,6 +15,7 @@ import {
   Form,
   Modal,
   Input,
+  DatePicker,
 } from "antd";
 import {
   PlusOutlined,
@@ -92,6 +93,8 @@ const CreateLabelModal = ({ open, loading, form, onOk, onCancel }) => (
 
 export default function Appointment() {
   const calendarRef = useRef(null);
+  const isDatePickerUpdateRef = useRef(false);
+  const lastFetchRef = useRef({ start: null, end: null });
   const [messageApi, contextHolder] = message.useMessage();
   const [events, setEvents] = useState([]);
   const [viewType, setViewType] = useState("timeGridWeek");
@@ -106,6 +109,7 @@ export default function Appointment() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const [isNewLabelModalOpen, setIsNewLabelModalOpen] = useState(false);
+  const [currentDate, setCurrentDate] = useState(dayjs());
 
   const [consultaForm] = Form.useForm();
   const [compromissoForm] = Form.useForm();
@@ -146,7 +150,8 @@ export default function Appointment() {
       console.error(err);
       messageApi.error("Erro ao carregar eventos.");
     }
-  }, [messageApi]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Fetch patients
   const fetchPatients = useCallback(async () => {
@@ -180,10 +185,28 @@ export default function Appointment() {
   }, [fetchPatients, fetchLabels]);
 
   // Handle date range change
-  const handleDatesSet = (arg) => {
+  const handleDatesSet = useCallback((arg) => {
     const start = dayjs(arg.start).format("YYYY-MM-DD");
     const end = dayjs(arg.end).format("YYYY-MM-DD");
-    fetchAppointments(start, end);
+    
+    // Only fetch if the date range actually changed (avoid infinite loop)
+    if (lastFetchRef.current.start !== start || lastFetchRef.current.end !== end) {
+      lastFetchRef.current = { start, end };
+      fetchAppointments(start, end);
+    }
+
+    // Update current date for DatePicker only if not from DatePicker update (avoid infinite loop)
+    if (!isDatePickerUpdateRef.current) {
+      const newDate = dayjs(arg.start);
+      setCurrentDate(prevDate => {
+        if (!prevDate || !newDate.isSame(prevDate, 'day')) {
+          return newDate;
+        }
+        return prevDate;
+      });
+    }
+    // Reset the flag
+    isDatePickerUpdateRef.current = false;
 
     // Update date range display
     if (arg.view.type === "timeGridWeek") {
@@ -192,10 +215,13 @@ export default function Appointment() {
       );
     } else if (arg.view.type === "timeGridDay") {
       setCurrentDateRange(dayjs(arg.start).format("DD/MM/YYYY"));
+    } else if (arg.view.type === "dayGridMonth") {
+      const monthName = dayjs(arg.start).format("MMMM [de] YYYY");
+      setCurrentDateRange(monthName.charAt(0).toUpperCase() + monthName.slice(1));
     } else {
       setCurrentDateRange("Agenda");
     }
-  };
+  }, [fetchAppointments]);
 
   // Handle view change
   const handleViewChange = (value) => {
@@ -227,6 +253,23 @@ export default function Appointment() {
       calendarApi.today();
     }
   };
+
+  // Handle date picker navigation
+  const handleDatePickerChange = useCallback((date) => {
+    if (date && calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      const dateToGo = date.toDate();
+      const currentViewDate = calendarApi.view.activeStart;
+      // Only navigate if the date is different from current view
+      if (!dayjs(dateToGo).isSame(dayjs(currentViewDate), 'day')) {
+        // Set flag to prevent updating currentDate in handleDatesSet
+        isDatePickerUpdateRef.current = true;
+        calendarApi.gotoDate(dateToGo);
+        // Update currentDate directly
+        setCurrentDate(date);
+      }
+    }
+  }, []);
 
   // Handle slot selection (create new appointment)
   const handleSelect = (selectInfo) => {
@@ -547,12 +590,23 @@ export default function Appointment() {
           </Title>
         </Space>
         <Space className="appointment-controls-right" wrap>
+          <DatePicker
+            format="DD/MM/YYYY"
+            placeholder="Ir para data"
+            value={currentDate}
+            onChange={handleDatePickerChange}
+            allowClear={false}
+            style={{ width: 140 }}
+            size="default"
+            showToday
+          />
           <Select
             value={viewType}
             onChange={handleViewChange}
             className="appointment-view-select"
           >
             <Option value="timeGridWeek">Semana</Option>
+            <Option value="dayGridMonth">Mês</Option>
             <Option value="timeGridDay">Dia</Option>
           </Select>
           <Button icon={<PlusOutlined />} onClick={handleCreateClick} className="appointment-btn-consulta">
@@ -572,6 +626,10 @@ export default function Appointment() {
             initialView="timeGridWeek"
             locale={ptBrLocale}
             headerToolbar={false}
+            validRange={{
+              start: dayjs().subtract(10, "year").format("YYYY-MM-DD"),
+              end: dayjs().add(10, "year").format("YYYY-MM-DD"),
+            }}
             slotMinTime="06:00:00"
             slotMaxTime="24:00:00"
             slotDuration="00:15:00"
