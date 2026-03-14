@@ -272,7 +272,7 @@ export default function Appointment() {
   }, []);
 
   // Handle slot selection (create new appointment)
-  const handleSelect = (selectInfo) => {
+  const handleSelect = useCallback((selectInfo) => {
     setSelectedSlot({
       start: selectInfo.start,
       end: selectInfo.end,
@@ -284,7 +284,23 @@ export default function Appointment() {
       duration_minutes: Math.round((selectInfo.end - selectInfo.start) / (1000 * 60)),
     });
     setIsConsultaModalOpen(true);
-  };
+  }, [consultaForm]);
+
+  // Handle date click for mobile
+  const handleDateClick = useCallback((arg) => {
+    // Handle date click for mobile - opens consulta modal
+    if (arg.view.type === 'timeGridWeek' || arg.view.type === 'timeGridDay') {
+      const start = arg.date;
+      const end = dayjs(start).add(30, 'minute').toDate();
+      handleSelect({
+        start,
+        end,
+        startStr: dayjs(start).toISOString(),
+        endStr: dayjs(end).toISOString(),
+        allDay: false,
+      });
+    }
+  }, [handleSelect]);
 
   // Helper function to refresh calendar events
   const refreshCalendarEvents = useCallback(() => {
@@ -302,7 +318,6 @@ export default function Appointment() {
     const appointment = clickInfo.event.extendedProps.appointment;
     setSelectedEvent(appointment);
 
-    console.log(appointment);
     if (appointment.type === "consulta") {
       consultaForm.setFieldsValue({
         patient_id: appointment.patient_id,
@@ -639,6 +654,9 @@ export default function Appointment() {
             selectable={true}
             selectMirror={true}
             editable={true}
+            unselectAuto={false}
+            selectMinDistance={0}
+            selectOverlap={false}
             events={events}
             height="auto"
             contentHeight="auto"
@@ -678,6 +696,7 @@ export default function Appointment() {
             );
           }}
           select={handleSelect}
+          dateClick={handleDateClick}
           eventClick={handleEventClick}
           eventChange={handleEventChange}
           datesSet={handleDatesSet}
