@@ -1,0 +1,58 @@
+/* Estilos para o editor de documentos */
+.document-editor-container {
+  width: 100%;
+}
+
+.document-editor-container .rich-text-editor {
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.document-editor-container .editor-toolbar {
+  padding: 8px 12px;
+  background-color: #fafafa;
+  border-bottom: 1px solid #d9d9d9;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.document-editor-container .editor-toolbar .ant-btn {
+  border: none;
+  box-shadow: none;
+}
+
+.document-editor-container .editor-toolbar .ant-btn:hover {
+  background-color: #e6f7ff;
+}
+
+.document-editor-container .editor-content {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.document-editor-container .editor-content:focus {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.document-editor-container .editor-content p {
+  margin: 0 0 8px 0;
+}
+
+.document-editor-container .editor-content p:last-child {
+  margin-bottom: 0;
+}
+
+.document-editor-container .editor-content ul,
+.document-editor-container .editor-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.document-editor-container .editor-content li {
+  margin: 4px 0;
+}

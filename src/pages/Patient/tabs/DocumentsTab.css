@@ -1,0 +1,62 @@
+.documents-tab-container {
+  padding: 20px 0;
+}
+
+.document-type-card {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.document-type-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.document-editor-modal .ant-modal-body {
+  padding: 24px;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.document-editor-container {
+  width: 100%;
+}
+
+.document-editor-container .ql-editor {
+  min-height: 300px;
+  font-size: 14px;
+}
+
+.document-editor-container .ql-container {
+  font-family: inherit;
+}
+
+.document-editor-container .ql-toolbar {
+  border-top: 1px solid #d9d9d9;
+  border-left: 1px solid #d9d9d9;
+  border-right: 1px solid #d9d9d9;
+  border-radius: 6px 6px 0 0;
+}
+
+.document-editor-container .ql-container {
+  border-bottom: 1px solid #d9d9d9;
+  border-left: 1px solid #d9d9d9;
+  border-right: 1px solid #d9d9d9;
+  border-radius: 0 0 6px 6px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .documents-tab-container {
+    padding: 16px 0;
+  }
+
+  .document-editor-modal {
+    width: 95% !important;
+    max-width: 95% !important;
+  }
+
+  .document-editor-container .ql-editor {
+    min-height: 250px;
+  }
+}
