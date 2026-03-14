@@ -16,8 +16,13 @@ import {
   message,
   Space,
   Tabs,
+  Table,
+  Switch,
+  InputNumber,
+  Tag,
+  Radio,
 } from "antd";
-import { ArrowLeftOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, EditOutlined, DeleteOutlined, PlusOutlined, CheckCircleOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../services/api";
 import PatientForm from "../../components/PatientForm/PatientForm";
@@ -33,7 +38,6 @@ export default function PatientDetails() {
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
-  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -43,21 +47,28 @@ export default function PatientDetails() {
   const [selectedFormId, setSelectedFormId] = useState(1);
   const [forms, setForms] = useState([]);
   const [loadingForms, setLoadingForms] = useState(false);
+  
+  // Estados para débitos
+  const [incomes, setIncomes] = useState([]);
+  const [loadingIncomes, setLoadingIncomes] = useState(false);
+  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+  const [incomeForm] = Form.useForm();
+  const [editingIncome, setEditingIncome] = useState(null);
+  const [hasInstallments, setHasInstallments] = useState(false);
+  const [isEditingInstallment, setIsEditingInstallment] = useState(false);
+  const [deleteIncomeConfirm, setDeleteIncomeConfirm] = useState({ 
+    open: false, 
+    id: null, 
+    title: null,
+    isInstallment: false,
+    deleteOption: "all"
+  });
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const res = await api.get(`/patients/${id}`);
       setPatient(res.data);
-
-      // Buscar faturas do paciente
-      try {
-        const invoicesRes = await api.get(`/patients/${id}/invoices`);
-        setInvoices(invoicesRes.data);
-      } catch (invoiceErr) {
-        console.error("Erro ao carregar faturas:", invoiceErr);
-        setInvoices([]);
-      }
 
       // Buscar consultas do paciente
       try {
@@ -165,6 +176,321 @@ export default function PatientDetails() {
       messageApi.error("Erro ao excluir paciente.");
     }
   };
+
+  // Funções para gerenciar débitos
+  const fetchIncomes = async () => {
+    try {
+      setLoadingIncomes(true);
+      const res = await api.get(`/patients/${id}/invoices`);
+      // Transformar os dados para o formato esperado pela tabela
+      const formattedIncomes = res.data.map((invoice) => {
+        // Se for uma parcela (tem installment)
+        if (invoice.installment) {
+          return {
+            id: `installment_${invoice.id}`,
+            transactionId: invoice.transactionId,
+            title: `${invoice.title} (${invoice.installment.current}/${invoice.installment.total})`,
+            description: invoice.description,
+            amount: invoice.amount,
+            dueDate: invoice.dueDate,
+            paymentDate: invoice.paymentDate,
+            isPaid: invoice.isPaid,
+            paymentType: invoice.paymentType,
+            patientId: id,
+            installmentNumber: invoice.installment.current,
+          };
+        }
+        // Se for débito simples
+        return {
+          id: invoice.id,
+          title: invoice.title,
+          description: invoice.description,
+          amount: invoice.amount,
+          dueDate: invoice.dueDate,
+          paymentDate: invoice.paymentDate,
+          isPaid: invoice.isPaid,
+          paymentType: invoice.paymentType,
+          patientId: id,
+        };
+      });
+      setIncomes(formattedIncomes);
+    } catch (err) {
+      console.error(err);
+      messageApi.error("Erro ao buscar débitos do paciente.");
+      setIncomes([]);
+    } finally {
+      setLoadingIncomes(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "incomes") {
+      fetchIncomes();
+    }
+  }, [activeTab, id]);
+
+  const handleIncomeSubmit = async (values) => {
+    try {
+      setLoadingIncomes(true);
+      
+      if (editingIncome) {
+        // Editar débito existente
+        if (isEditingInstallment) {
+          // Para parcelas, enviar apenas os campos permitidos
+          const formData = {
+            title: values.title,
+            description: values.description,
+            paymentType: values.paymentType,
+            patientId: id,
+          };
+          await api.put(`/cashflow/income/${editingIncome.id}`, formData);
+          messageApi.success("Débito parcelado atualizado com sucesso!");
+        } else {
+          // Para débitos simples, enviar todos os campos
+          const formData = {
+            ...values,
+            dueDate: values.dueDate?.format("YYYY-MM-DD"),
+            patientId: id,
+          };
+          await api.put(`/cashflow/income/${editingIncome.id}`, formData);
+          messageApi.success("Débito atualizado com sucesso!");
+        }
+      } else {
+        // Criar novo débito
+        const formData = {
+          ...values,
+          dueDate: values.dueDate?.format("YYYY-MM-DD"),
+          firstInstallmentDate: values.firstInstallmentDate?.format("YYYY-MM-DD"),
+          patientId: id,
+        };
+        
+        if (values.hasInstallments) {
+          formData.installments = {
+            count: values.installmentCount,
+            firstDate: formData.firstInstallmentDate,
+            interval: 1,
+            intervalType: values.intervalType,
+          };
+        }
+        
+        await api.post("/cashflow/income", formData);
+        messageApi.success("Débito criado com sucesso!");
+      }
+      
+      setIsIncomeModalOpen(false);
+      incomeForm.resetFields();
+      setEditingIncome(null);
+      setHasInstallments(false);
+      setIsEditingInstallment(false);
+      fetchIncomes();
+    } catch (err) {
+      console.error(err);
+      messageApi.error(editingIncome ? "Erro ao atualizar débito" : "Erro ao criar débito");
+    } finally {
+      setLoadingIncomes(false);
+    }
+  };
+
+  const handleEditIncome = (record) => {
+    // Verificar se é uma parcela
+    const isInstallment = typeof record.id === 'string' && record.id.startsWith('installment_');
+    
+    if (isInstallment) {
+      // Para parcelas, usar o transactionId e mostrar apenas campos permitidos
+      if (!record.transactionId) {
+        messageApi.warning("Não foi possível encontrar o débito principal.");
+        return;
+      }
+      
+      // Remover o sufixo de parcela do título
+      const cleanTitle = record.title?.replace(/\s*\(\d+\/\d+\)$/, '') || "";
+      
+      setEditingIncome({
+        id: record.transactionId,
+        title: cleanTitle,
+        description: record.description || "",
+        patientId: id,
+        paymentType: record.paymentType,
+      });
+      setIsEditingInstallment(true);
+      
+      incomeForm.setFieldsValue({
+        title: cleanTitle,
+        description: record.description || "",
+        patientId: id,
+        paymentType: record.paymentType,
+      });
+    } else {
+      // Para débitos simples, mostrar todos os campos
+      setEditingIncome(record);
+      setIsEditingInstallment(false);
+      
+      incomeForm.setFieldsValue({
+        title: record.title || "",
+        description: record.description || "",
+        amount: record.amount,
+        dueDate: record.dueDate ? dayjs(record.dueDate) : null,
+        patientId: id,
+        paymentType: record.paymentType,
+      });
+    }
+    
+    setIsIncomeModalOpen(true);
+  };
+
+  const handleDeleteIncome = async () => {
+    try {
+      setLoadingIncomes(true);
+      
+      // Se for uma parcela, usar o endpoint de parcelas com a opção escolhida
+      if (deleteIncomeConfirm.isInstallment) {
+        const installmentId = deleteIncomeConfirm.id.replace('installment_', '');
+        await api.delete(`/cashflow/installments/${installmentId}`, {
+          params: { option: deleteIncomeConfirm.deleteOption }
+        });
+        messageApi.success(
+          deleteIncomeConfirm.deleteOption === "single" 
+            ? "Parcela deletada com sucesso!"
+            : deleteIncomeConfirm.deleteOption === "from-this"
+            ? "Parcela e próximas deletadas com sucesso!"
+            : "Toda a recorrência deletada com sucesso!"
+        );
+      } else {
+        // Se for débito simples, deletar normalmente
+        await api.delete(`/cashflow/income/${deleteIncomeConfirm.id}`);
+        messageApi.success("Débito deletado com sucesso!");
+      }
+      
+      setDeleteIncomeConfirm({ 
+        open: false, 
+        id: null, 
+        title: null,
+        isInstallment: false,
+        deleteOption: "all"
+      });
+      fetchIncomes();
+    } catch (err) {
+      console.error(err);
+      messageApi.error("Erro ao deletar débito");
+    } finally {
+      setLoadingIncomes(false);
+    }
+  };
+
+  const handleTogglePaidStatus = async (record) => {
+    try {
+      setLoadingIncomes(true);
+      
+      // Se for uma parcela (ID começa com "installment_"), usar endpoint de parcelas
+      if (typeof record.id === 'string' && record.id.startsWith('installment_')) {
+        const installmentId = record.id.replace('installment_', '');
+        const res = await api.put(`/cashflow/installments/${installmentId}/pay`);
+        messageApi.success(res.data.message);
+      } else {
+        // Se for transaction simples, usar endpoint de transactions
+        const res = await api.put(`/cashflow/transactions/${record.id}/toggle-paid?type=income`);
+        messageApi.success(res.data.message);
+      }
+      
+      fetchIncomes();
+    } catch (err) {
+      console.error(err);
+      messageApi.error("Erro ao alterar status de pagamento");
+    } finally {
+      setLoadingIncomes(false);
+    }
+  };
+
+  // Colunas da tabela de débitos
+  const incomeColumns = [
+    {
+      title: "Data",
+      dataIndex: "dueDate",
+      key: "dueDate",
+      render: (date) => dayjs(date).format("DD/MM/YYYY"),
+    },
+    {
+      title: "Título",
+      dataIndex: "title",
+      key: "title",
+    },
+    {
+      title: "Tipo",
+      dataIndex: "paymentType",
+      key: "paymentType",
+      render: (type) => (
+        <Tag color={type === "Dinheiro" ? "green" : type === "PIX" ? "blue" : "purple"}>
+          {type}
+        </Tag>
+      ),
+    },
+    {
+      title: "Valor",
+      dataIndex: "amount",
+      key: "amount",
+      render: (value) => (
+        <Text strong style={{ color: "#52c41a" }}>
+          R$ {Number(value).toLocaleString("pt-BR", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
+        </Text>
+      ),
+      align: "right",
+    },
+    {
+      title: "Pago",
+      key: "isPaid",
+      render: (_, record) => (
+        <Switch
+          checked={record.isPaid || false}
+          onChange={() => handleTogglePaidStatus(record)}
+          checkedChildren="Sim"
+          unCheckedChildren="Não"
+        />
+      ),
+      align: "center",
+    },
+    {
+      title: "Ações",
+      key: "actions",
+      render: (_, record) => {
+        const isInstallment = typeof record.id === 'string' && record.id.startsWith('installment_');
+        return (
+          <Space>
+            <Button
+              type="default"
+              icon={<EditOutlined />}
+              onClick={() => handleEditIncome(record)}
+              size="small"
+              title={isInstallment ? "Editar débito parcelado (apenas alguns campos)" : "Editar"}
+            >
+              Editar
+            </Button>
+            <Button
+              type="primary"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => {
+                const isInstallment = typeof record.id === 'string' && record.id.startsWith('installment_');
+                setDeleteIncomeConfirm({ 
+                  open: true, 
+                  id: record.id, 
+                  title: record.title,
+                  isInstallment: isInstallment,
+                  deleteOption: isInstallment ? "single" : "all"
+                });
+              }}
+              size="small"
+            >
+              Excluir
+            </Button>
+          </Space>
+        );
+      },
+      align: "right",
+    },
+  ];
 
   if (loading) return <Spin style={{ display: "block", margin: "80px auto" }} />;
 
@@ -323,62 +649,6 @@ export default function PatientDetails() {
                     </Card>
                   </Col>
                 </Row>
-
-                <Divider />
-                <Card title="Faturas" style={{ marginTop: 12, minHeight: 120 }}>
-                  {invoices.length === 0 ? (
-                    <Text type="secondary">Nenhuma fatura registrada.</Text>
-                  ) : (
-                    <div style={{ maxHeight: 400, overflowY: "auto" }}>
-                      {invoices.map((invoice) => (
-                        <div key={invoice.id} style={{ marginBottom: 16, padding: 12, border: "1px solid #f0f0f0", borderRadius: 4 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
-                            <div style={{ flex: 1 }}>
-                              <Text strong style={{ display: "block", marginBottom: 4 }}>{invoice.title}</Text>
-                              {invoice.description && (
-                                <Text type="secondary" style={{ fontSize: 12, display: "block", marginBottom: 4 }}>
-                                  {invoice.description}
-                                </Text>
-                              )}
-                              {invoice.installment.total > 1 && (
-                                <Text type="secondary" style={{ fontSize: 12 }}>
-                                  Parcela {invoice.installment.current} de {invoice.installment.total}
-                                </Text>
-                              )}
-                            </div>
-                            <div style={{ textAlign: "right" }}>
-                              <Text strong style={{ fontSize: 16, color: invoice.isPaid ? "#52c41a" : "#ff4d4f", display: "block" }}>
-                                R$ {invoice.amount.toFixed(2).replace(".", ",")}
-                              </Text>
-                              <Text 
-                                type={invoice.isPaid ? "success" : "danger"} 
-                                style={{ fontSize: 12, display: "block", marginTop: 4 }}
-                              >
-                                {invoice.isPaid ? "Paga" : "Pendente"}
-                              </Text>
-                            </div>
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#8c8c8c" }}>
-                            <Text>
-                              <Text strong>Vencimento:</Text> {dayjs(invoice.dueDate).format("DD/MM/YYYY")}
-                            </Text>
-                            {invoice.paymentDate && (
-                              <Text>
-                                <Text strong>Pagamento:</Text> {dayjs(invoice.paymentDate).format("DD/MM/YYYY")}
-                              </Text>
-                            )}
-                            {invoice.paymentType && (
-                              <Text>
-                                <Text strong>Forma:</Text> {invoice.paymentType}
-                              </Text>
-                            )}
-                          </div>
-                          {invoice !== invoices[invoices.length - 1] && <Divider style={{ margin: "12px 0 0 0" }} />}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </Card>
               </>
             ),
           },
@@ -406,6 +676,41 @@ export default function PatientDetails() {
                   </Space>
                 </Card>
                 <PatientForm patientId={id} formId={selectedFormId} key={selectedFormId} />
+              </div>
+            ),
+          },
+          {
+            key: "incomes",
+            label: "Débitos",
+            children: (
+              <div>
+                <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Title level={4} style={{ margin: 0 }}>Débitos do Paciente</Title>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      setEditingIncome(null);
+                      setHasInstallments(false);
+                      setIsEditingInstallment(false);
+                      incomeForm.resetFields();
+                      incomeForm.setFieldsValue({ patientId: id });
+                      setIsIncomeModalOpen(true);
+                    }}
+                  >
+                    Novo Débito
+                  </Button>
+                </div>
+                <Table
+                  columns={incomeColumns}
+                  dataSource={incomes}
+                  loading={loadingIncomes}
+                  pagination={{ pageSize: 10, showSizeChanger: false, responsive: true }}
+                  rowKey="id"
+                  scroll={{ x: true }}
+                  showHeader={incomes.length > 0}
+                  locale={{ emptyText: "Nenhum débito registrado" }}
+                />
               </div>
             ),
           },
@@ -731,6 +1036,218 @@ export default function PatientDetails() {
         <Text>
           Tem certeza que deseja excluir o paciente <strong>{patient?.full_name}</strong>?
         </Text>
+      </Modal>
+
+      {/* Modal de Confirmação de Exclusão de Débito */}
+      <Modal
+        title="Confirmar Exclusão"
+        open={deleteIncomeConfirm.open}
+        onOk={handleDeleteIncome}
+        onCancel={() => setDeleteIncomeConfirm({ 
+          open: false, 
+          id: null, 
+          title: null,
+          isInstallment: false,
+          deleteOption: "all"
+        })}
+        okText="Sim, excluir"
+        cancelText="Cancelar"
+        okButtonProps={{ danger: true }}
+        confirmLoading={loadingIncomes}
+      >
+        <div>
+          <p style={{ marginBottom: 16 }}>
+            Tem certeza que deseja excluir o débito <strong>{deleteIncomeConfirm.title}</strong>?
+          </p>
+          
+          {deleteIncomeConfirm.isInstallment && (
+            <div>
+              <p style={{ marginBottom: 12, fontWeight: 500 }}>O que você deseja excluir?</p>
+              <Radio.Group
+                value={deleteIncomeConfirm.deleteOption}
+                onChange={(e) => setDeleteIncomeConfirm({ ...deleteIncomeConfirm, deleteOption: e.target.value })}
+                style={{ width: "100%" }}
+              >
+                <Space direction="vertical" style={{ width: "100%" }}>
+                  <Radio value="single">
+                    <strong>Apenas esta parcela</strong>
+                    <div style={{ marginLeft: 24, fontSize: 12, color: "#8c8c8c" }}>
+                      Remove apenas a parcela selecionada
+                    </div>
+                  </Radio>
+                  <Radio value="from-this">
+                    <strong>Esta e as próximas</strong>
+                    <div style={{ marginLeft: 24, fontSize: 12, color: "#8c8c8c" }}>
+                      Remove esta parcela e todas as parcelas futuras
+                    </div>
+                  </Radio>
+                  <Radio value="all">
+                    <strong>Toda a recorrência</strong>
+                    <div style={{ marginLeft: 24, fontSize: 12, color: "#8c8c8c" }}>
+                      Remove todas as parcelas deste débito
+                    </div>
+                  </Radio>
+                </Space>
+              </Radio.Group>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Modal de Novo/Editar Débito */}
+      <Modal
+        title={editingIncome ? (isEditingInstallment ? "Editar Débito Parcelado" : "Editar Débito") : "Novo Débito"}
+        open={isIncomeModalOpen}
+        onOk={() => incomeForm.submit()}
+        onCancel={() => {
+          setIsIncomeModalOpen(false);
+          incomeForm.resetFields();
+          setHasInstallments(false);
+          setEditingIncome(null);
+          setIsEditingInstallment(false);
+        }}
+        okText={editingIncome ? "Salvar" : "Criar"}
+        cancelText="Cancelar"
+        width="90%"
+        style={{ maxWidth: 600 }}
+      >
+        <Form
+          form={incomeForm}
+          layout="vertical"
+          onFinish={handleIncomeSubmit}
+        >
+          <Form.Item
+            name="title"
+            label="Título"
+            rules={[{ required: true, message: "Informe o título!" }]}
+          >
+            <Input placeholder="Título do débito" />
+          </Form.Item>
+
+          <Form.Item name="description" label="Descrição">
+            <TextArea rows={3} placeholder="Descrição do débito" />
+          </Form.Item>
+
+          {!isEditingInstallment && (
+            <>
+              <Form.Item
+                name="amount"
+                label="Valor"
+                rules={[{ required: true, message: "Informe o valor!" }]}
+              >
+                <InputNumber
+                  min={0}
+                  step={0.01}
+                  style={{ width: "100%" }}
+                  prefix="R$"
+                  placeholder="0,00"
+                  decimalSeparator=","
+                  thousandSeparator="."
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="dueDate"
+                label="Data de Vencimento"
+                rules={[{ required: !hasInstallments, message: "Informe a data de vencimento!" }]}
+              >
+                <DatePicker
+                  style={{ width: "100%" }}
+                  format="DD/MM/YYYY"
+                  disabled={hasInstallments}
+                />
+              </Form.Item>
+            </>
+          )}
+
+          {isEditingInstallment && (
+            <div style={{ 
+              padding: "12px", 
+              backgroundColor: "#f0f0f0", 
+              borderRadius: "4px",
+              marginBottom: "16px"
+            }}>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                <strong>Nota:</strong> Ao editar um débito parcelado, você pode alterar apenas o título, descrição, tipo de pagamento e paciente. 
+                O valor e as datas das parcelas não podem ser alterados.
+              </Text>
+            </div>
+          )}
+
+          <Form.Item
+            name="paymentType"
+            label="Tipo de Pagamento"
+            rules={[{ required: true, message: "Selecione o tipo de pagamento!" }]}
+          >
+            <Select placeholder="Selecione o tipo">
+              <Option value="Dinheiro">Dinheiro</Option>
+              <Option value="PIX">PIX</Option>
+              <Option value="Cartão">Cartão</Option>
+              <Option value="Transferência">Transferência</Option>
+            </Select>
+          </Form.Item>
+
+          {!editingIncome && !isEditingInstallment && (
+            <Form.Item name="hasInstallments" valuePropName="checked">
+              <Switch 
+                checkedChildren="Parcelado" 
+                unCheckedChildren="À vista"
+                onChange={(checked) => {
+                  setHasInstallments(checked);
+                  if (!checked) {
+                    incomeForm.setFieldsValue({
+                      installmentCount: undefined,
+                      firstInstallmentDate: undefined,
+                      intervalType: undefined,
+                    });
+                  }
+                }}
+              />
+            </Form.Item>
+          )}
+
+          {hasInstallments && !editingIncome && !isEditingInstallment && (
+            <>
+              <Form.Item
+                name="installmentCount"
+                label="Número de Parcelas"
+                rules={[
+                  {
+                    required: true,
+                    message: "Informe o número de parcelas!",
+                  },
+                ]}
+              >
+                <InputNumber min={2} max={60} style={{ width: "100%" }} />
+              </Form.Item>
+
+              <Form.Item
+                name="firstInstallmentDate"
+                label="Data da Primeira Parcela"
+                rules={[
+                  {
+                    required: true,
+                    message: "Informe a data da primeira parcela!",
+                  },
+                ]}
+              >
+                <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+              </Form.Item>
+
+              <Form.Item
+                name="intervalType"
+                label="Intervalo entre Parcelas"
+                rules={[{ required: true, message: "Selecione o intervalo!" }]}
+              >
+                <Select placeholder="Selecione o intervalo">
+                  <Option value="daily">Diário</Option>
+                  <Option value="weekly">Semanal</Option>
+                  <Option value="monthly">Mensal</Option>
+                </Select>
+              </Form.Item>
+            </>
+          )}
+        </Form>
       </Modal>
     </div>
   );
