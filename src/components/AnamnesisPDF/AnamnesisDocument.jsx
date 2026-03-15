@@ -323,12 +323,13 @@ const AnamnesisDocument = ({
             <Text style={styles.subtitle}>Anamnese</Text>
             
             {sortedQuestions.map((question, index) => {
-              const answer = answers[question.id_question];
+              const questionId = question.id; // UUID
+              const answer = answers[questionId];
               const answerText = answer?.answer || "Não respondido";
               const commentText = answer?.comment || null;
 
               return (
-                <View key={question.id_question} style={{ marginBottom: 8 }}>
+                <View key={questionId} style={{ marginBottom: 8 }}>
                   <Text style={styles.questionText}>
                     {index + 1}. {question.question}
                   </Text>

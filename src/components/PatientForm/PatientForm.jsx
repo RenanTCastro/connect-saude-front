@@ -82,10 +82,10 @@ export default function PatientForm({ patientId, formId = 1 }) {
         const patientFormResponse = await api.get(`/patients/${patientId}/forms/${formId}`);
         const patientForm = patientFormResponse.data;
         
-        // Criar um mapa de respostas por id_question
+        // Criar um mapa de respostas por question_id (UUID)
         const answersMap = {};
-        patientForm.answers.forEach((answer) => {
-          answersMap[answer.id_question] = {
+        (patientForm.answers || []).forEach((answer) => {
+          answersMap[answer.question_id] = {
             answer: answer.answer,
             comment: answer.comment,
           };
@@ -96,31 +96,32 @@ export default function PatientForm({ patientId, formId = 1 }) {
         if (response.data.questions) {
           const initialValues = {};
           response.data.questions.forEach((question) => {
-            if (answersMap[question.id_question]) {
-              const answerValue = answersMap[question.id_question].answer;
-              const commentValue = answersMap[question.id_question].comment;
+            const questionId = question.id; // UUID
+            if (answersMap[questionId]) {
+              const answerValue = answersMap[questionId].answer;
+              const commentValue = answersMap[questionId].comment;
               
               // Tratar diferentes tipos ao carregar valores iniciais
               if (question.answer_type === "date" && answerValue) {
                 // Converter string de data para dayjs
-                initialValues[`question_${question.id_question}`] = dayjs(answerValue);
+                initialValues[`question_${questionId}`] = dayjs(answerValue);
               } else if (question.answer_type === "number" && answerValue) {
                 // Converter string para número
-                initialValues[`question_${question.id_question}`] = parseFloat(answerValue);
+                initialValues[`question_${questionId}`] = parseFloat(answerValue);
               } else if (answerValue) {
-                initialValues[`question_${question.id_question}`] = answerValue;
+                initialValues[`question_${questionId}`] = answerValue;
               }
               
               // Carregar comentário se existir
               if (commentValue) {
-                initialValues[`comment_${question.id_question}`] = commentValue;
+                initialValues[`comment_${questionId}`] = commentValue;
                 // Se for questão de escolha e tiver comentário, mostrar o campo independente da resposta
                 if ((question.answer_type === "yes_no" || question.answer_type === "yes_no_unknown") && 
                     question.has_comment && 
                     answerValue) {
                   setShowComments(prev => ({
                     ...prev,
-                    [question.id_question]: true
+                    [questionId]: true
                   }));
                 }
               }
@@ -150,8 +151,9 @@ export default function PatientForm({ patientId, formId = 1 }) {
 
       // Transformar os valores do form em formato de respostas
       const answers = formData.questions.map((question) => {
-        const answerValue = values[`question_${question.id_question}`];
-        const commentValue = values[`comment_${question.id_question}`];
+        const questionId = question.id; // UUID
+        const answerValue = values[`question_${questionId}`];
+        const commentValue = values[`comment_${questionId}`];
         
         // Tratar diferentes tipos de resposta
         let answer = null;
@@ -164,7 +166,7 @@ export default function PatientForm({ patientId, formId = 1 }) {
         }
 
         return {
-          id_question: question.id_question,
+          question_id: questionId,
           answer: answer,
           comment: commentValue || null,
         };
@@ -203,46 +205,54 @@ export default function PatientForm({ patientId, formId = 1 }) {
     }));
   };
 
-  const renderQuestionInput = (question) => {
-    const fieldName = `question_${question.id_question}`;
-    const commentFieldName = `comment_${question.id_question}`;
+  const renderQuestionInput = (question, questionNumber) => {
+    const questionId = question.id; // UUID
+    const fieldName = `question_${questionId}`;
+    const commentFieldName = `comment_${questionId}`;
     const rules = question.required
       ? [{ required: true, message: "Este campo é obrigatório" }]
       : [];
 
     const isChoiceType = question.answer_type === "yes_no" || question.answer_type === "yes_no_unknown";
+    
+    // Adicionar número da ordem ao label em negrito
+    const questionLabel = (
+      <span>
+        <strong>{questionNumber}.</strong> {question.question}
+      </span>
+    );
 
     const inputComponent = (() => {
       switch (question.answer_type) {
         case "text":
           return (
-            <Form.Item name={fieldName} label={question.question} rules={rules}>
+            <Form.Item name={fieldName} label={questionLabel} rules={rules}>
               <Input placeholder="Digite sua resposta" />
             </Form.Item>
           );
 
         case "textarea":
           return (
-            <Form.Item name={fieldName} label={question.question} rules={rules}>
+            <Form.Item name={fieldName} label={questionLabel} rules={rules}>
               <TextArea rows={4} placeholder="Digite sua resposta" />
             </Form.Item>
           );
 
         case "yes_no":
           return (
-            <Form.Item name={fieldName} label={question.question} rules={rules}>
+            <Form.Item name={fieldName} label={questionLabel} rules={rules}>
               <Radio.Group 
                 onChange={(e) => {
                   // Mostrar comentário automaticamente apenas quando resposta for "Sim"
                   if (question.has_comment && e.target.value === "Sim") {
                     setShowComments(prev => ({
                       ...prev,
-                      [question.id_question]: true
+                      [questionId]: true
                     }));
                   } else if (question.has_comment) {
                     setShowComments(prev => ({
                       ...prev,
-                      [question.id_question]: false
+                      [questionId]: false
                     }));
                   }
                 }}
@@ -255,19 +265,19 @@ export default function PatientForm({ patientId, formId = 1 }) {
 
         case "yes_no_unknown":
           return (
-            <Form.Item name={fieldName} label={question.question} rules={rules}>
+            <Form.Item name={fieldName} label={questionLabel} rules={rules}>
               <Radio.Group 
                 onChange={(e) => {
                   // Mostrar comentário automaticamente apenas quando resposta for "Sim"
                   if (question.has_comment && e.target.value === "Sim") {
                     setShowComments(prev => ({
                       ...prev,
-                      [question.id_question]: true
+                      [questionId]: true
                     }));
                   } else if (question.has_comment) {
                     setShowComments(prev => ({
                       ...prev,
-                      [question.id_question]: false
+                      [questionId]: false
                     }));
                   }
                 }}
@@ -281,7 +291,7 @@ export default function PatientForm({ patientId, formId = 1 }) {
 
         case "number":
           return (
-            <Form.Item name={fieldName} label={question.question} rules={rules}>
+            <Form.Item name={fieldName} label={questionLabel} rules={rules}>
               <InputNumber 
                 style={{ width: "100%" }} 
                 placeholder="Digite um número"
@@ -294,7 +304,7 @@ export default function PatientForm({ patientId, formId = 1 }) {
           return (
             <Form.Item 
               name={fieldName} 
-              label={question.question} 
+              label={questionLabel} 
               rules={rules}
               getValueFromEvent={(date) => date ? date.format("YYYY-MM-DD") : null}
               getValueProps={(value) => ({ value: value ? dayjs(value) : null })}
@@ -309,7 +319,7 @@ export default function PatientForm({ patientId, formId = 1 }) {
 
         default:
           return (
-            <Form.Item name={fieldName} label={question.question} rules={rules}>
+            <Form.Item name={fieldName} label={questionLabel} rules={rules}>
               <Input placeholder="Digite sua resposta" />
             </Form.Item>
           );
@@ -325,7 +335,7 @@ export default function PatientForm({ patientId, formId = 1 }) {
           }>
             {({ getFieldValue }) => {
               const answerValue = getFieldValue(fieldName);
-              const isCommentVisible = showComments[question.id_question] !== false;
+              const isCommentVisible = showComments[questionId] !== false;
 
               // Para sim/não, só exibir bloco de comentário quando a resposta for "Sim"
               if (isChoiceType && answerValue !== "Sim") {
@@ -344,7 +354,7 @@ export default function PatientForm({ patientId, formId = 1 }) {
                             type="text"
                             size="small"
                             icon={<EyeInvisibleOutlined />}
-                            onClick={() => toggleComment(question.id_question)}
+                            onClick={() => toggleComment(questionId)}
                             style={{ padding: 0, height: "auto" }}
                           >
                             Esconder
@@ -366,7 +376,7 @@ export default function PatientForm({ patientId, formId = 1 }) {
                           type="text"
                           size="small"
                           icon={<EyeOutlined />}
-                          onClick={() => toggleComment(question.id_question)}
+                          onClick={() => toggleComment(questionId)}
                           style={{ padding: 0, height: "auto" }}
                         >
                           Mostrar comentário
@@ -422,9 +432,9 @@ export default function PatientForm({ patientId, formId = 1 }) {
           >
             {formData.questions
               .sort((a, b) => (a.order || 0) - (b.order || 0))
-              .map((question) => (
-                <div key={question.id_question} style={{ marginBottom: 24 }}>
-                  {renderQuestionInput(question)}
+              .map((question, index) => (
+                <div key={question.id} style={{ marginBottom: 24 }}>
+                  {renderQuestionInput(question, index + 1)}
                 </div>
               ))}
 
