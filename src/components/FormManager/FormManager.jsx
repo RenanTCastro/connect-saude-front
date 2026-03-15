@@ -25,10 +25,12 @@ export default function FormManager({ open, onClose, onFormSelect }) {
   const [editingForm, setEditingForm] = useState(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const [formWasSaved, setFormWasSaved] = useState(false);
 
   useEffect(() => {
     if (open) {
       fetchForms();
+      setFormWasSaved(false); // Resetar quando o modal abrir
     }
   }, [open]);
 
@@ -60,6 +62,7 @@ export default function FormManager({ open, onClose, onFormSelect }) {
       await api.delete(`/forms/${idForm}`);
       messageApi.success("Formulário deletado com sucesso!");
       fetchForms();
+      setFormWasSaved(true); // Marcar que algo foi alterado
     } catch (error) {
       console.error("Erro ao deletar formulário:", error);
       messageApi.error("Erro ao deletar formulário.");
@@ -73,6 +76,7 @@ export default function FormManager({ open, onClose, onFormSelect }) {
       });
       messageApi.success("Formulário duplicado com sucesso!");
       fetchForms();
+      setFormWasSaved(true); // Marcar que algo foi alterado
     } catch (error) {
       console.error("Erro ao duplicar formulário:", error);
       messageApi.error("Erro ao duplicar formulário.");
@@ -84,6 +88,7 @@ export default function FormManager({ open, onClose, onFormSelect }) {
     setEditingForm(null);
     if (saved) {
       fetchForms();
+      setFormWasSaved(true); // Marcar que um formulário foi salvo
     }
   };
 
@@ -91,7 +96,11 @@ export default function FormManager({ open, onClose, onFormSelect }) {
     if (onFormSelect) {
       onFormSelect(form.id_form);
     }
-    onClose();
+    onClose(formWasSaved);
+  };
+
+  const handleClose = () => {
+    onClose(formWasSaved);
   };
 
   const columns = [
@@ -160,7 +169,7 @@ export default function FormManager({ open, onClose, onFormSelect }) {
       <Modal
         title="Gerenciar Formulários"
         open={open}
-        onCancel={onClose}
+        onCancel={handleClose}
         footer={null}
         width={900}
       >

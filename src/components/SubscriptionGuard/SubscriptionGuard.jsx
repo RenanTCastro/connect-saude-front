@@ -91,7 +91,7 @@ export default function SubscriptionGuard({ children }) {
   // Sempre renderizar o modal se não tiver acesso, independente do estado isModalVisible
   const shouldShowModal = !hasAccess;
   
-  if (!hasAccess) {
+  if (hasAccess) {
     return (
       <>
         {children}

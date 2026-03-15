@@ -14,6 +14,7 @@ export default function AnamnesisTab({ patientId }) {
   const [loadingForms, setLoadingForms] = useState(false);
   const [isManagerOpen, setIsManagerOpen] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     fetchForms();
@@ -43,6 +44,16 @@ export default function AnamnesisTab({ patientId }) {
   const handleFormSelect = (formId) => {
     setSelectedFormId(formId);
     fetchForms();
+  };
+
+  const handleManagerClose = (formWasSaved) => {
+    setIsManagerOpen(false);
+    // Se um formulário foi salvo, atualizar a lista e forçar refresh do PatientForm
+    if (formWasSaved) {
+      fetchForms();
+      // Incrementar refreshKey para forçar recarregamento do PatientForm
+      setRefreshKey(prev => prev + 1);
+    }
   };
 
   return (
@@ -76,7 +87,7 @@ export default function AnamnesisTab({ patientId }) {
         </Space>
       </Card>
       {selectedFormId && (
-        <PatientForm patientId={patientId} formId={selectedFormId} key={selectedFormId} />
+        <PatientForm patientId={patientId} formId={selectedFormId} key={`${selectedFormId}-${refreshKey}`} />
       )}
       {!selectedFormId && forms.length === 0 && (
         <Card>
@@ -87,7 +98,7 @@ export default function AnamnesisTab({ patientId }) {
       )}
       <FormManager
         open={isManagerOpen}
-        onClose={() => setIsManagerOpen(false)}
+        onClose={handleManagerClose}
         onFormSelect={handleFormSelect}
       />
     </div>
