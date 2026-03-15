@@ -278,11 +278,6 @@ export default function Landing() {
                   className={`feature-card ${feature.isHighlighted ? 'feature-card-highlighted' : ''}`} 
                   hoverable
                 >
-                  {feature.isHighlighted && (
-                    <div className="feature-badge">
-                      <FireOutlined /> Mais Desejado
-                    </div>
-                  )}
                   <div className="feature-icon">{feature.icon}</div>
                   <Title level={4} className="feature-title">
                     {feature.title}
@@ -305,7 +300,7 @@ export default function Landing() {
               <div className="whatsapp-showcase-content">
                 <div className="whatsapp-badge-large">
                   <WhatsAppIcon size={32} color="#25d366" />
-                  <span>Recurso Mais Desejado</span>
+                  <span>Lembretes Automáticos</span>
                 </div>
                 <Title level={2} className="whatsapp-title">
                   Lembretes Automáticos por WhatsApp
@@ -350,28 +345,16 @@ export default function Landing() {
                     <div className="whatsapp-message whatsapp-message-received">
                       <div className="whatsapp-message-bubble">
                         <Text>
-                          Olá! Este é um lembrete automático da sua consulta agendada.
+                          Olá, Luísa Marques.
+                          <br />
+                          <br />
+                          Sua consulta está confirmada para dia 15/03/2024 às 14:0, na Clínica Odontológica Dr. João Silva.
+                          <br />
+                          <br />
+                          Em caso de dúvidas ou necessidade de reagendamento, entre em contato com seu profissional de saúde.
                         </Text>
                       </div>
                       <Text type="secondary" className="whatsapp-message-time">10:30</Text>
-                    </div>
-                    <div className="whatsapp-message whatsapp-message-received">
-                      <div className="whatsapp-message-bubble">
-                        <Text strong>📅 Consulta: 15/03/2024 às 14:00</Text>
-                        <br />
-                        <Text>📍 Clínica Odontológica</Text>
-                        <br />
-                        <Text>👨‍⚕️ Dr. João Silva</Text>
-                      </div>
-                      <Text type="secondary" className="whatsapp-message-time">10:30</Text>
-                    </div>
-                    <div className="whatsapp-message whatsapp-message-received">
-                      <div className="whatsapp-message-bubble">
-                        <Text>
-                          Por favor, confirme sua presença ou entre em contato para reagendar.
-                        </Text>
-                      </div>
-                      <Text type="secondary" className="whatsapp-message-time">10:31</Text>
                     </div>
                   </div>
                 </div>
