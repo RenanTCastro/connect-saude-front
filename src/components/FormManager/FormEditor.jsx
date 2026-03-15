@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, memo } from "react";
 import {
   Modal,
   Form,
@@ -31,6 +31,120 @@ const ANSWER_TYPES = [
   { value: "number", label: "Número" },
   { value: "date", label: "Data" },
 ];
+
+// Componente memoizado para cada pergunta
+const QuestionItem = memo(({ 
+  question, 
+  index, 
+  questionNumber,
+  onQuestionChange,
+  onMoveQuestion,
+  onRemoveQuestion,
+  canMoveUp,
+  canMoveDown,
+}) => {
+  return (
+    <Card size="small">
+      <Space direction="vertical" style={{ width: "100%" }} size="small">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
+          <Text strong>Pergunta <strong>{questionNumber}</strong></Text>
+          <Space>
+            <Button
+              type="text"
+              size="small"
+              icon={<ArrowUpOutlined />}
+              disabled={!canMoveUp}
+              onClick={() => onMoveQuestion(index, "up")}
+            />
+            <Button
+              type="text"
+              size="small"
+              icon={<ArrowDownOutlined />}
+              disabled={!canMoveDown}
+              onClick={() => onMoveQuestion(index, "down")}
+            />
+            <Button
+              type="text"
+              danger
+              size="small"
+              icon={<DeleteOutlined />}
+              onClick={() => onRemoveQuestion(index)}
+            />
+          </Space>
+        </div>
+
+        <Input
+          placeholder="Digite a pergunta"
+          value={question.question}
+          onChange={(e) =>
+            onQuestionChange(index, "question", e.target.value)
+          }
+        />
+
+        <Select
+          style={{ width: "100%" }}
+          value={question.answer_type}
+          onChange={(value) =>
+            onQuestionChange(index, "answer_type", value)
+          }
+        >
+          {ANSWER_TYPES.map((type) => (
+            <Option key={type.value} value={type.value}>
+              {type.label}
+            </Option>
+          ))}
+        </Select>
+
+        <Space>
+          <Checkbox
+            checked={question.required}
+            onChange={(e) =>
+              onQuestionChange(
+                index,
+                "required",
+                e.target.checked
+              )
+            }
+          >
+            Obrigatória
+          </Checkbox>
+          <Checkbox
+            checked={question.has_comment}
+            onChange={(e) =>
+              onQuestionChange(
+                index,
+                "has_comment",
+                e.target.checked
+              )
+            }
+          >
+            Permite comentário
+          </Checkbox>
+        </Space>
+      </Space>
+    </Card>
+  );
+}, (prevProps, nextProps) => {
+  return (
+    prevProps.question.id === nextProps.question.id &&
+    prevProps.question.question === nextProps.question.question &&
+    prevProps.question.answer_type === nextProps.question.answer_type &&
+    prevProps.question.required === nextProps.question.required &&
+    prevProps.question.has_comment === nextProps.question.has_comment &&
+    prevProps.questionNumber === nextProps.questionNumber &&
+    prevProps.canMoveUp === nextProps.canMoveUp &&
+    prevProps.canMoveDown === nextProps.canMoveDown &&
+    prevProps.index === nextProps.index
+  );
+});
+
+QuestionItem.displayName = "QuestionItem";
 
 export default function FormEditor({ open, form, onClose }) {
   const [formInstance] = Form.useForm();
@@ -89,44 +203,49 @@ export default function FormEditor({ open, form, onClose }) {
       has_comment: false,
       order: questions.length,
     };
-    setQuestions([...questions, newQuestion]);
+  
+    setQuestions((prev) => [...prev, newQuestion]);
   };
 
-  const handleRemoveQuestion = (index) => {
-    const newQuestions = questions.filter((_, i) => i !== index);
-    // Reordenar
-    const reordered = newQuestions.map((q, i) => ({ ...q, order: i }));
-    setQuestions(reordered);
-  };
+  const handleRemoveQuestion = useCallback((index) => {
+    setQuestions((prevQuestions) => {
+      const newQuestions = prevQuestions.filter((_, i) => i !== index);
+      // Reordenar
+      return newQuestions.map((q, i) => ({ ...q, order: i }));
+    });
+  }, []);
 
-  const handleMoveQuestion = (index, direction) => {
-    if (
-      (direction === "up" && index === 0) ||
-      (direction === "down" && index === questions.length - 1)
-    ) {
-      return;
-    }
+  const handleMoveQuestion = useCallback((index, direction) => {
+    setQuestions((prevQuestions) => {
+      if (
+        (direction === "up" && index === 0) ||
+        (direction === "down" && index === prevQuestions.length - 1)
+      ) {
+        return prevQuestions;
+      }
 
-    const newQuestions = [...questions];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    [newQuestions[index], newQuestions[targetIndex]] = [
-      newQuestions[targetIndex],
-      newQuestions[index],
-    ];
+      const newQuestions = [...prevQuestions];
+      const targetIndex = direction === "up" ? index - 1 : index + 1;
+      [newQuestions[index], newQuestions[targetIndex]] = [
+        newQuestions[targetIndex],
+        newQuestions[index],
+      ];
 
-    // Reordenar
-    const reordered = newQuestions.map((q, i) => ({ ...q, order: i }));
-    setQuestions(reordered);
-  };
+      // Reordenar
+      return newQuestions.map((q, i) => ({ ...q, order: i }));
+    });
+  }, []);
 
-  const handleQuestionChange = (index, field, value) => {
-    const newQuestions = [...questions];
-    newQuestions[index] = {
-      ...newQuestions[index],
-      [field]: value,
-    };
-    setQuestions(newQuestions);
-  };
+  const handleQuestionChange = useCallback((index, field, value) => {
+    setQuestions((prevQuestions) => {
+      const newQuestions = [...prevQuestions];
+      newQuestions[index] = {
+        ...newQuestions[index],
+        [field]: value,
+      };
+      return newQuestions;
+    });
+  }, []);
 
   const handleSubmit = async () => {
     try {
@@ -275,91 +394,17 @@ export default function FormEditor({ open, form, onClose }) {
                 {questions.map((question, index) => {
                   const questionNumber = (question.order !== undefined ? question.order : index) + 1;
                   return (
-                  <Card key={question.id} size="small">
-                    <Space direction="vertical" style={{ width: "100%" }} size="small">
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                        }}
-                      >
-                        <Text strong>Pergunta <strong>{questionNumber}</strong></Text>
-                        <Space>
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<ArrowUpOutlined />}
-                            disabled={index === 0}
-                            onClick={() => handleMoveQuestion(index, "up")}
-                          />
-                          <Button
-                            type="text"
-                            size="small"
-                            icon={<ArrowDownOutlined />}
-                            disabled={index === questions.length - 1}
-                            onClick={() => handleMoveQuestion(index, "down")}
-                          />
-                          <Button
-                            type="text"
-                            danger
-                            size="small"
-                            icon={<DeleteOutlined />}
-                            onClick={() => handleRemoveQuestion(index)}
-                          />
-                        </Space>
-                      </div>
-
-                      <Input
-                        placeholder="Digite a pergunta"
-                        value={question.question}
-                        onChange={(e) =>
-                          handleQuestionChange(index, "question", e.target.value)
-                        }
-                      />
-
-                      <Select
-                        style={{ width: "100%" }}
-                        value={question.answer_type}
-                        onChange={(value) =>
-                          handleQuestionChange(index, "answer_type", value)
-                        }
-                      >
-                        {ANSWER_TYPES.map((type) => (
-                          <Option key={type.value} value={type.value}>
-                            {type.label}
-                          </Option>
-                        ))}
-                      </Select>
-
-                      <Space>
-                        <Checkbox
-                          checked={question.required}
-                          onChange={(e) =>
-                            handleQuestionChange(
-                              index,
-                              "required",
-                              e.target.checked
-                            )
-                          }
-                        >
-                          Obrigatória
-                        </Checkbox>
-                        <Checkbox
-                          checked={question.has_comment}
-                          onChange={(e) =>
-                            handleQuestionChange(
-                              index,
-                              "has_comment",
-                              e.target.checked
-                            )
-                          }
-                        >
-                          Permite comentário
-                        </Checkbox>
-                      </Space>
-                    </Space>
-                  </Card>
+                    <QuestionItem
+                      key={question.id}
+                      question={question}
+                      index={index}
+                      questionNumber={questionNumber}
+                      onQuestionChange={handleQuestionChange}
+                      onMoveQuestion={handleMoveQuestion}
+                      onRemoveQuestion={handleRemoveQuestion}
+                      canMoveUp={index !== 0}
+                      canMoveDown={index !== questions.length - 1}
+                    />
                   );
                 })}
               </Space>
