@@ -6,18 +6,9 @@ import {
   DollarOutlined,
   ShoppingOutlined,
   InboxOutlined,
-  BellOutlined,
   CheckCircleOutlined,
   StarFilled,
   ArrowRightOutlined,
-  FireOutlined,
-  FileTextOutlined,
-  PaperClipOutlined,
-  FolderOutlined,
-  BarChartOutlined,
-  ShoppingCartOutlined,
-  UserOutlined,
-  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import logoFull from "../../assets/logo_full.svg";
@@ -25,21 +16,15 @@ import mockupImage from "../../assets/mockup.svg";
 import WhatsAppButton from "../../components/WhatsAppButton/WhatsAppButton";
 import "./Landing.css";
 
-// Imports para prints das funcionalidades
-// Adicione as imagens na pasta assets com os nomes abaixo
-// Se as imagens não existirem, descomente e ajuste os imports ou deixe como null
-// - agenda-inteligente.png
-// - gestao-pacientes.png  
-// - fluxo-caixa.png
-// - crm-vendas.png
-// - estoque.png
-
 // Descomente e ajuste os caminhos quando adicionar as imagens:
 import agendaPrint from "../../assets/agenda-inteligente.png";
 import pacientesPrint from "../../assets/gestao-pacientes.png";
 import caixaPrint from "../../assets/fluxo-caixa.png";
 import crmPrint from "../../assets/crm-vendas.png";
 import estoquePrint from "../../assets/estoque.png";
+import joaoPhoto from "../../assets/testimonials/joao.png";
+import pedroPhoto from "../../assets/testimonials/pedro.png";
+import mariPhoto from "../../assets/testimonials/mari.png";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -146,7 +131,7 @@ export default function Landing() {
     {
       id: 5,
       icon: <InboxOutlined />,
-      title: "Estoque",
+      title: "Gestão de stoque",
       description:
         "Controle de produtos com entrada e saída e mantenha seu inventário sempre organizado.",
     },
@@ -175,33 +160,27 @@ export default function Landing() {
       name: "Dr. João Silva",
       profession: "Dentista - Clínica Odontológica",
       avatar: "JS",
+      photo: joaoPhoto,
       rating: 5,
-      text: "O Connect Saúde transformou completamente a gestão do meu consultório. Agora consigo organizar todas as consultas, pacientes e finanças em um único sistema. A economia de tempo é impressionante!",
+      text: "Antes eu usava planilhas e era tudo muito bagunçado. Com o Connect Saúde consigo ver agenda, pacientes e financeiro no mesmo lugar. Facilitou muito a rotina do consultório.",
     },
     {
       id: 2,
-      name: "Dra. Maria Santos",
+      name: "Dra. Mari Gerdel",
       profession: "Dentista - Consultório Odontológico",
       avatar: "MS",
       rating: 5,
-      text: "Economizamos horas por semana com o sistema. O controle de estoque de materiais odontológicos e fluxo de caixa são excepcionais. Recomendo para qualquer dentista que queira modernizar seu consultório.",
+      text: "O que mais gostei foi o controle de estoque e financeiro. Antes eu perdia muito tempo organizando isso manualmente. Hoje consigo acompanhar tudo pelo sistema",
     },
     {
       id: 3,
       name: "Dr. Pedro Costa",
       profession: "Dentista - Clínica Odontológica",
       avatar: "PC",
+      photo: pedroPhoto,
       rating: 5,
-      text: "O controle financeiro ficou muito mais fácil. Conseguimos acompanhar receitas de tratamentos, despesas com materiais e saldo a receber de forma simples e intuitiva. Excelente investimento para dentistas!",
-    },
-    {
-      id: 4,
-      name: "Dra. Ana Oliveira",
-      profession: "Dentista - Consultório Odontológico",
-      avatar: "AO",
-      rating: 5,
-      text: "A agenda inteligente é perfeita para gerenciar os agendamentos dos pacientes! Nunca mais perdemos um compromisso. O sistema é muito intuitivo e minha equipe se adaptou rapidamente.",
-    },
+      text: "Começamos a usar o Connect Saúde há alguns meses e ajudou bastante na organização dos atendimentos e dos pagamentos dos pacientes. O sistema é simples de usar.",
+    }
   ];
 
   return (
@@ -213,11 +192,8 @@ export default function Landing() {
             <img src={logoFull} alt="Connect Saúde" />
           </div>
           <nav className="header-nav">
-            <a href="#features" onClick={(e) => { e.preventDefault(); scrollToSection("features"); }}>
-              Funcionalidades
-            </a>
             <a href="#showcase" onClick={(e) => { e.preventDefault(); scrollToSection("showcase"); }}>
-              Showcase
+              Funcionalidades
             </a>
             <a href="#testimonials" onClick={(e) => { e.preventDefault(); scrollToSection("testimonials"); }}>
               Depoimentos
@@ -278,43 +254,6 @@ export default function Landing() {
               <img src={mockupImage} alt="Connect Saúde - Sistema de Gestão" className="mockup-image" />
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="features-section">
-        <div className="section-container fade-in-section">
-          <div className="section-header">
-            <Title level={2} className="section-title">
-              Funcionalidades Completas
-            </Title>
-            <Paragraph className="section-description">
-              Tudo que você precisa para gerenciar seu consultório odontológico com eficiência
-            </Paragraph>
-            <div className="trust-badge">
-              <Text strong style={{ fontSize: '18px', color: '#1677ff' }}>
-                +500 profissionais já confiam no Connect Saúde
-              </Text>
-            </div>
-          </div>
-          <Row gutter={[24, 24]} className="features-grid">
-            {features.map((feature) => (
-              <Col xs={24} sm={12} lg={8} key={feature.id}>
-                <Card 
-                  className={`feature-card ${feature.isHighlighted ? 'feature-card-highlighted' : ''}`} 
-                  hoverable
-                >
-                  <div className="feature-icon">{feature.icon}</div>
-                  <Title level={4} className="feature-title">
-                    {feature.title}
-                  </Title>
-                  <Paragraph className="feature-description">
-                    {feature.description}
-                  </Paragraph>
-                </Card>
-              </Col>
-            ))}
-          </Row>
         </div>
       </section>
 
@@ -787,13 +726,17 @@ export default function Landing() {
               Dentistas que confiam no Connect Saúde
             </Paragraph>
           </div>
-          <Row gutter={[24, 24]} className="testimonials-grid">
+          <Row gutter={[24, 24]} className="testimonials-grid" justify="center">
             {testimonials.map((testimonial) => (
-              <Col xs={24} sm={12} lg={6} key={testimonial.id}>
+              <Col xs={24} sm={12} lg={8} key={testimonial.id}>
                 <Card className="testimonial-card">
                   <div className="testimonial-header">
-                    <Avatar size={64} className="testimonial-avatar">
-                      {testimonial.avatar}
+                    <Avatar 
+                      size={64} 
+                      className="testimonial-avatar"
+                      src={testimonial.photo}
+                    >
+                      {!testimonial.photo && testimonial.avatar}
                     </Avatar>
                     <div className="testimonial-info">
                       <Text strong className="testimonial-name">
@@ -876,13 +819,8 @@ export default function Landing() {
               <Text strong>Produto</Text>
               <ul>
                 <li>
-                  <a href="#features" onClick={(e) => { e.preventDefault(); scrollToSection("features"); }}>
-                    Funcionalidades
-                  </a>
-                </li>
-                <li>
                   <a href="#showcase" onClick={(e) => { e.preventDefault(); scrollToSection("showcase"); }}>
-                    Showcase
+                    Funcionalidades
                   </a>
                 </li>
                 <li>
