@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Button, Typography, Row, Col, Card, Space, Avatar, Rate } from "antd";
+import { Button, Typography, Row, Col, Card, Space, Avatar, Rate, Tabs } from "antd";
 import {
   CalendarOutlined,
   TeamOutlined,
@@ -11,12 +11,35 @@ import {
   StarFilled,
   ArrowRightOutlined,
   FireOutlined,
+  FileTextOutlined,
+  PaperClipOutlined,
+  FolderOutlined,
+  BarChartOutlined,
+  ShoppingCartOutlined,
+  UserOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import logoFull from "../../assets/logo_full.svg";
 import mockupImage from "../../assets/mockup.svg";
 import WhatsAppButton from "../../components/WhatsAppButton/WhatsAppButton";
 import "./Landing.css";
+
+// Imports para prints das funcionalidades
+// Adicione as imagens na pasta assets com os nomes abaixo
+// Se as imagens não existirem, descomente e ajuste os imports ou deixe como null
+// - agenda-inteligente.png
+// - gestao-pacientes.png  
+// - fluxo-caixa.png
+// - crm-vendas.png
+// - estoque.png
+
+// Descomente e ajuste os caminhos quando adicionar as imagens:
+import agendaPrint from "../../assets/agenda-inteligente.png";
+import pacientesPrint from "../../assets/gestao-pacientes.png";
+import caixaPrint from "../../assets/fluxo-caixa.png";
+import crmPrint from "../../assets/crm-vendas.png";
+import estoquePrint from "../../assets/estoque.png";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -193,6 +216,9 @@ export default function Landing() {
             <a href="#features" onClick={(e) => { e.preventDefault(); scrollToSection("features"); }}>
               Funcionalidades
             </a>
+            <a href="#showcase" onClick={(e) => { e.preventDefault(); scrollToSection("showcase"); }}>
+              Showcase
+            </a>
             <a href="#testimonials" onClick={(e) => { e.preventDefault(); scrollToSection("testimonials"); }}>
               Depoimentos
             </a>
@@ -292,75 +318,425 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* WhatsApp Showcase Section */}
-      <section className="whatsapp-showcase-section">
+      {/* Detailed Showcase Section */}
+      <section id="showcase" className="showcase-section">
         <div className="section-container fade-in-section">
-          <Row gutter={[48, 48]} align="middle">
-            <Col xs={24} lg={12}>
-              <div className="whatsapp-showcase-content">
-                <div className="whatsapp-badge-large">
-                  <WhatsAppIcon size={32} color="#25d366" />
-                  <span>Lembretes Automáticos</span>
-                </div>
-                <Title level={2} className="whatsapp-title">
-                  Lembretes Automáticos por WhatsApp
-                </Title>
-                <Paragraph className="whatsapp-description">
-                  Seus pacientes recebem lembretes automáticos de consultas diretamente no WhatsApp. 
-                  Reduza faltas em até 80% e melhore a comunicação com sua clínica de forma profissional e eficiente.
-                </Paragraph>
-                <ul className="whatsapp-benefits-list">
-                  <li>
-                    <CheckCircleOutlined className="whatsapp-benefit-icon" />
-                    <Text>Envio automático de lembretes</Text>
-                  </li>
-                  <li>
-                    <CheckCircleOutlined className="whatsapp-benefit-icon" />
-                    <Text>Redução significativa de faltas</Text>
-                  </li>
-                  <li>
-                    <CheckCircleOutlined className="whatsapp-benefit-icon" />
-                    <Text>Comunicação profissional e personalizada</Text>
-                  </li>
-                  <li>
-                    <CheckCircleOutlined className="whatsapp-benefit-icon" />
-                    <Text>Economia de tempo e recursos</Text>
-                  </li>
-                </ul>
-              </div>
-            </Col>
-            <Col xs={24} lg={12}>
-              <div className="whatsapp-mockup-container">
-                <div className="whatsapp-mockup">
-                  <div className="whatsapp-mockup-header">
-                    <div className="whatsapp-mockup-contact">
-                      <WhatsAppIcon size={20} color="#25d366" />
-                      <div className="whatsapp-mockup-contact-info">
-                        <Text strong>Connect Saúde</Text>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>online</Text>
-                      </div>
-                    </div>
+          <div className="section-header">
+            <Title level={2} className="section-title">
+              Conheça Nossas Funcionalidades em Detalhes
+            </Title>
+            <Paragraph className="section-description">
+              Explore cada módulo do sistema e descubra como podemos transformar a gestão do seu consultório
+            </Paragraph>
+          </div>
+          
+          <Tabs
+            defaultActiveKey="agenda"
+            type="card"
+            size="large"
+            className="showcase-tabs"
+            items={[
+              {
+                key: 'agenda',
+                label: (
+                  <Space>
+                    <CalendarOutlined />
+                    <span>Agenda Inteligente</span>
+                  </Space>
+                ),
+                children: (
+                  <div className="showcase-content">
+                    <Row gutter={[48, 48]} align="middle">
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-visual">
+                          <div className="showcase-image-container">
+                            {agendaPrint ? (
+                              <img 
+                                src={agendaPrint} 
+                                alt="Agenda Inteligente - Connect Saúde" 
+                                className="showcase-image"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="showcase-image-placeholder" style={{ display: agendaPrint ? 'none' : 'flex' }}>
+                              <CalendarOutlined style={{ fontSize: '48px', color: '#1677ff' }} />
+                              <Text type="secondary">Adicione a imagem agenda-inteligente.png na pasta assets</Text>
+                            </div>
+                          </div>
+                        </div>
+                      </Col>
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-details">
+                          <Title level={3}>Agenda Inteligente</Title>
+                          <Paragraph className="showcase-description">
+                            Gerencie todos os seus agendamentos de forma visual e intuitiva. Nossa agenda inteligente oferece uma experiência completa para organizar sua rotina profissional.
+                          </Paragraph>
+                          <ul className="showcase-features-list">
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Visualização em calendário mensal, semanal e diário</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Agendamento rápido com arrastar e soltar</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Lembretes automáticos por WhatsApp</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Histórico completo de consultas</Text>
+                            </li>
+                          </ul>
+                        </div>
+                      </Col>
+                    </Row>
                   </div>
-                  <div className="whatsapp-mockup-messages">
-                    <div className="whatsapp-message whatsapp-message-received">
-                      <div className="whatsapp-message-bubble">
-                        <Text>
-                          Olá, Luísa Marques.
-                          <br />
-                          <br />
-                          Sua consulta está confirmada para dia 15/03/2024 às 14:0, na Clínica Odontológica Dr. João Silva.
-                          <br />
-                          <br />
-                          Em caso de dúvidas ou necessidade de reagendamento, entre em contato com seu profissional de saúde.
-                        </Text>
-                      </div>
-                      <Text type="secondary" className="whatsapp-message-time">10:30</Text>
-                    </div>
+                ),
+              },
+              {
+                key: 'pacientes',
+                label: (
+                  <Space>
+                    <TeamOutlined />
+                    <span>Gestão de Pacientes</span>
+                  </Space>
+                ),
+                children: (
+                  <div className="showcase-content">
+                    <Row gutter={[48, 48]} align="middle">
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-details">
+                          <Title level={3}>Gestão Completa de Pacientes</Title>
+                          <Paragraph className="showcase-description">
+                            Tenha todas as informações dos seus pacientes organizadas em um só lugar. Desde dados pessoais até histórico completo de tratamentos, anamnese, anexos e documentos.
+                          </Paragraph>
+                          <ul className="showcase-features-list">
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Anamnese completa com formulários personalizáveis</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Cadastro completo com dados pessoais e contatos</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Anexos: salve arquivos e fotos do paciente de forma organizada</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Documentos: modelos personalizáveis para impressão de contratos, receituário, atestado e termos de consentimento</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Gestão de débitos do paciente</Text>
+                            </li>
+                          </ul>
+                        </div>
+                      </Col>
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-visual">
+                          <div className="showcase-image-container">
+                            {pacientesPrint ? (
+                              <img 
+                                src={pacientesPrint} 
+                                alt="Gestão de Pacientes - Connect Saúde" 
+                                className="showcase-image"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="showcase-image-placeholder" style={{ display: pacientesPrint ? 'none' : 'flex' }}>
+                              <TeamOutlined style={{ fontSize: '48px', color: '#1677ff' }} />
+                              <Text type="secondary">Adicione a imagem gestao-pacientes.png na pasta assets</Text>
+                            </div>
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
                   </div>
-                </div>
-              </div>
-            </Col>
-          </Row>
+                ),
+              },
+              {
+                key: 'caixa',
+                label: (
+                  <Space>
+                    <DollarOutlined />
+                    <span>Fluxo de Caixa</span>
+                  </Space>
+                ),
+                children: (
+                  <div className="showcase-content">
+                    <Row gutter={[48, 48]} align="middle">
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-visual">
+                          <div className="showcase-image-container">
+                            {caixaPrint ? (
+                              <img 
+                                src={caixaPrint} 
+                                alt="Fluxo de Caixa - Connect Saúde" 
+                                className="showcase-image"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="showcase-image-placeholder" style={{ display: caixaPrint ? 'none' : 'flex' }}>
+                              <DollarOutlined style={{ fontSize: '48px', color: '#1677ff' }} />
+                              <Text type="secondary">Adicione a imagem fluxo-caixa.png na pasta assets</Text>
+                            </div>
+                          </div>
+                        </div>
+                      </Col>
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-details">
+                          <Title level={3}>Controle Financeiro Completo</Title>
+                          <Paragraph className="showcase-description">
+                            Gerencie receitas, despesas e saldo a receber com relatórios detalhados e controle de parcelas. Tenha visibilidade total das finanças do seu consultório.
+                          </Paragraph>
+                          <ul className="showcase-features-list">
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Controle de receitas e despesas em tempo real</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Gestão de saldo a receber com parcelas</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Controle de contas a pagar e receber</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Dashboard com visão geral das finanças</Text>
+                            </li>
+                          </ul>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                ),
+              },
+              {
+                key: 'crm',
+                label: (
+                  <Space>
+                    <ShoppingOutlined />
+                    <span>CRM e Vendas</span>
+                  </Space>
+                ),
+                children: (
+                  <div className="showcase-content">
+                    <Row gutter={[48, 48]} align="middle">
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-details">
+                          <Title level={3}>CRM e Gestão de Vendas</Title>
+                          <Paragraph className="showcase-description">
+                            Gerencie todo o processo de vendas da sua clínica, desde o primeiro contato até o fechamento. Acompanhe leads, oportunidades e converta mais pacientes.
+                          </Paragraph>
+                          <ul className="showcase-features-list">
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Pipeline de vendas visual e intuitivo</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Gestão de leads e oportunidades</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Acompanhamento de propostas e orçamentos</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Histórico completo de interações</Text>
+                            </li>
+                          </ul>
+                        </div>
+                      </Col>
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-visual">
+                          <div className="showcase-image-container">
+                            {crmPrint ? (
+                              <img 
+                                src={crmPrint} 
+                                alt="CRM e Vendas - Connect Saúde" 
+                                className="showcase-image"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="showcase-image-placeholder" style={{ display: crmPrint ? 'none' : 'flex' }}>
+                              <ShoppingOutlined style={{ fontSize: '48px', color: '#1677ff' }} />
+                              <Text type="secondary">Adicione a imagem crm-vendas.png na pasta assets</Text>
+                            </div>
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                ),
+              },
+              {
+                key: 'estoque',
+                label: (
+                  <Space>
+                    <InboxOutlined />
+                    <span>Estoque</span>
+                  </Space>
+                ),
+                children: (
+                  <div className="showcase-content">
+                    <Row gutter={[48, 48]} align="middle">
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-visual">
+                          <div className="showcase-image-container">
+                            {estoquePrint ? (
+                              <img 
+                                src={estoquePrint} 
+                                alt="Controle de Estoque - Connect Saúde" 
+                                className="showcase-image"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : null}
+                            <div className="showcase-image-placeholder" style={{ display: estoquePrint ? 'none' : 'flex' }}>
+                              <InboxOutlined style={{ fontSize: '48px', color: '#1677ff' }} />
+                              <Text type="secondary">Adicione a imagem estoque.png na pasta assets</Text>
+                            </div>
+                          </div>
+                        </div>
+                      </Col>
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-details">
+                          <Title level={3}>Gestão de Estoque Inteligente</Title>
+                          <Paragraph className="showcase-description">
+                            Controle completo de produtos e materiais odontológicos. Receba alertas de estoque baixo, gerencie entradas e saídas, e mantenha seu inventário sempre organizado.
+                          </Paragraph>
+                          <ul className="showcase-features-list">
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Controle de entrada e saída de produtos</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Alertas automáticos de estoque baixo</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Histórico completo de movimentações</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Relatórios de consumo e reposição</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Controle de validade de produtos</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Busca rápida e categorização de produtos</Text>
+                            </li>
+                          </ul>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                ),
+              },
+              {
+                key: 'whatsapp',
+                label: (
+                  <Space>
+                    <WhatsAppIcon size={20} color="#25d366" />
+                    <span>Lembretes WhatsApp</span>
+                  </Space>
+                ),
+                children: (
+                  <div className="showcase-content">
+                    <Row gutter={[48, 48]} align="middle">
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-details">
+                          <Title level={3} style={{ marginTop: '24px' }}>
+                            Lembretes Automáticos por WhatsApp
+                          </Title>
+                          <Paragraph className="showcase-description">
+                            Seus pacientes recebem lembretes automáticos de consultas diretamente no WhatsApp. 
+                            Reduza faltas em até 80% e melhore a comunicação com sua clínica de forma profissional e eficiente.
+                          </Paragraph>
+                          <ul className="showcase-features-list">
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Envio automático de lembretes</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Redução significativa de faltas</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Comunicação profissional e personalizada</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Economia de tempo e recursos</Text>
+                            </li>
+                          </ul>
+                        </div>
+                      </Col>
+                      <Col xs={24} lg={12}>
+                        <div className="showcase-visual">
+                          <div className="whatsapp-mockup-container">
+                            <div className="whatsapp-mockup">
+                              <div className="whatsapp-mockup-header">
+                                <div className="whatsapp-mockup-contact">
+                                  <WhatsAppIcon size={20} color="#ffffff" />
+                                  <div className="whatsapp-mockup-contact-info">
+                                    <Text strong style={{ color: '#ffffff' }}>Connect Saúde</Text>
+                                    <Text style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.9)' }}>online</Text>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="whatsapp-mockup-messages">
+                                <div className="whatsapp-message whatsapp-message-received">
+                                  <div className="whatsapp-message-bubble">
+                                    <Text>
+                                      Olá, Luísa Marques.
+                                      <br />
+                                      <br />
+                                      Sua consulta está confirmada para dia 15/03/2024 às 14:00, na Clínica Odontológica Dr. João Silva.
+                                      <br />
+                                      <br />
+                                      Em caso de dúvidas ou necessidade de reagendamento, entre em contato com seu profissional de saúde.
+                                    </Text>
+                                  </div>
+                                  <Text type="secondary" className="whatsapp-message-time">10:30</Text>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Col>
+                    </Row>
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
       </section>
 
@@ -502,6 +878,11 @@ export default function Landing() {
                 <li>
                   <a href="#features" onClick={(e) => { e.preventDefault(); scrollToSection("features"); }}>
                     Funcionalidades
+                  </a>
+                </li>
+                <li>
+                  <a href="#showcase" onClick={(e) => { e.preventDefault(); scrollToSection("showcase"); }}>
+                    Showcase
                   </a>
                 </li>
                 <li>
