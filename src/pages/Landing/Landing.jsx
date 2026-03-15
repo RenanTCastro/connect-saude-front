@@ -24,7 +24,6 @@ import crmPrint from "../../assets/crm-vendas.png";
 import estoquePrint from "../../assets/estoque.png";
 import joaoPhoto from "../../assets/testimonials/joao.png";
 import pedroPhoto from "../../assets/testimonials/pedro.png";
-import mariPhoto from "../../assets/testimonials/mari.png";
 
 const { Title, Paragraph, Text } = Typography;
 
