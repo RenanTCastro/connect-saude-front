@@ -1,3 +1,16 @@
+/* Estilos para alertas de quantidade abaixo do ideal */
+.inventory-row-warning {
+  background-color: #fff7e6 !important;
+}
+
+.inventory-row-warning:hover {
+  background-color: #ffe7ba !important;
+}
+
+.inventory-row-warning td {
+  border-color: #ffd591 !important;
+}
+
 /* Responsividade para mobile */
 @media (max-width: 768px) {
   .inventory-header {

@@ -12,6 +12,7 @@ export const useInventory = () => {
       key: item.id,
       name: item.name,
       quantity: item.quantity,
+      ideal_quantity: item.ideal_quantity || null,
     }));
   };
 
@@ -75,6 +76,24 @@ export const useInventory = () => {
     }
   }, [messageApi]);
 
+  const adjustQuantity = useCallback(async (id, operation, amount) => {
+    try {
+      setLoading(true);
+      await api.put(`/inventory/${id}/adjust-quantity`, {
+        operation, // 'add' ou 'subtract'
+        amount
+      });
+      messageApi.success("Quantidade alterada com sucesso!");
+      return true;
+    } catch (err) {
+      console.error(err);
+      messageApi.error("Erro ao alterar quantidade!");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [messageApi]);
+
   return {
     // Estados
     loading,
@@ -86,6 +105,7 @@ export const useInventory = () => {
     createItem,
     updateItem,
     deleteItem,
+    adjustQuantity,
     setData,
   };
 };

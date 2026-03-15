@@ -19,7 +19,7 @@ export const InventoryFormModal = ({
 }) => {
   return (
     <Modal
-      title={selectedItem ? "Atualizar Produto" : "Adicionar Produto"}
+      title={selectedItem ? "Editar Produto" : "Adicionar Produto"}
       open={open}
       onOk={onOk}
       onCancel={onCancel}
@@ -43,11 +43,45 @@ export const InventoryFormModal = ({
           />
         </Form.Item>
 
+        {!selectedItem && (
+          <Form.Item
+            name="quantity"
+            label="Quantidade Inicial"
+            rules={[
+              { required: true, message: "Informe a quantidade inicial!" },
+              {
+                validator: (_, value) => {
+                  if (!value && value !== 0) {
+                    return Promise.resolve();
+                  }
+                  const numValue = typeof value === 'string' ? parseInt(value) : value;
+                  if (isNaN(numValue)) {
+                    return Promise.reject(new Error("Valor inválido"));
+                  }
+                  if (numValue < 0) {
+                    return Promise.reject(new Error("A quantidade não pode ser negativa"));
+                  }
+                  if (numValue > 999999) {
+                    return Promise.reject(new Error("A quantidade não pode ser maior que 999.999"));
+                  }
+                  return Promise.resolve();
+                }
+              }
+            ]}
+          >
+            <InputNumber
+              min={0}
+              max={999999}
+              style={{ width: "100%" }}
+              placeholder="Quantidade inicial"
+            />
+          </Form.Item>
+        )}
+
         <Form.Item
-          name="quantity"
-          label="Quantidade"
+          name="ideal_quantity"
+          label="Quantidade Ideal"
           rules={[
-            { required: true, message: "Informe a quantidade!" },
             {
               validator: (_, value) => {
                 if (!value && value !== 0) {
@@ -58,10 +92,10 @@ export const InventoryFormModal = ({
                   return Promise.reject(new Error("Valor inválido"));
                 }
                 if (numValue < 0) {
-                  return Promise.reject(new Error("A quantidade não pode ser negativa"));
+                  return Promise.reject(new Error("A quantidade ideal não pode ser negativa"));
                 }
                 if (numValue > 999999) {
-                  return Promise.reject(new Error("A quantidade não pode ser maior que 999.999"));
+                  return Promise.reject(new Error("A quantidade ideal não pode ser maior que 999.999"));
                 }
                 return Promise.resolve();
               }
@@ -72,7 +106,7 @@ export const InventoryFormModal = ({
             min={0}
             max={999999}
             style={{ width: "100%" }}
-            placeholder="Quantidade"
+            placeholder="Quantidade ideal (opcional)"
           />
         </Form.Item>
       </Form>
