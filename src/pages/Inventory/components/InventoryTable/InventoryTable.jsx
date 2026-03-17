@@ -1,5 +1,5 @@
 import { Table, Button, Space, Tag, Tooltip } from 'antd';
-import { EditOutlined, DeleteOutlined, PlusOutlined, WarningOutlined } from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined, PlusOutlined, WarningOutlined, HistoryOutlined } from "@ant-design/icons";
 
 /**
  * Tabela de produtos do estoque
@@ -8,6 +8,7 @@ import { EditOutlined, DeleteOutlined, PlusOutlined, WarningOutlined } from "@an
  * @param {function} onEdit - Callback ao editar produto
  * @param {function} onDelete - Callback ao excluir produto
  * @param {function} onAdjustQuantity - Callback ao alterar quantidade
+ * @param {function} onHistory - Callback ao ver histórico
  */
 export const InventoryTable = ({
   data,
@@ -15,6 +16,7 @@ export const InventoryTable = ({
   onEdit,
   onDelete,
   onAdjustQuantity,
+  onHistory,
 }) => {
   const columns = [
     {
@@ -78,6 +80,15 @@ export const InventoryTable = ({
             className="action-button"
           >
             <span className="button-text">Alterar Qtd</span>
+          </Button>
+
+          <Button 
+            type="default"
+            icon={<HistoryOutlined />} 
+            onClick={() => onHistory(record)}
+            className="action-button"
+          >
+            <span className="button-text">Histórico</span>
           </Button>
 
           <Button 

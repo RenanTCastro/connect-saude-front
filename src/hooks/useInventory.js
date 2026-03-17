@@ -76,6 +76,17 @@ export const useInventory = () => {
     }
   }, [messageApi]);
 
+  const fetchHistory = useCallback(async (itemId) => {
+    try {
+      const res = await api.get(`/inventory/${itemId}/history`);
+      return res.data;
+    } catch (err) {
+      console.error(err);
+      messageApi.error("Erro ao buscar histórico");
+      return null;
+    }
+  }, [messageApi]);
+
   const adjustQuantity = useCallback(async (id, operation, amount) => {
     try {
       setLoading(true);
@@ -106,6 +117,7 @@ export const useInventory = () => {
     updateItem,
     deleteItem,
     adjustQuantity,
+    fetchHistory,
     setData,
   };
 };

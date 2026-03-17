@@ -3,6 +3,7 @@ import { Form } from "antd";
 import { useInventory } from "../../hooks/useInventory";
 import { InventoryFormModal } from "./components/InventoryFormModal/InventoryFormModal";
 import { InventoryQuantityModal } from "./components/InventoryQuantityModal/InventoryQuantityModal";
+import { InventoryHistoryModal } from "./components/InventoryHistoryModal/InventoryHistoryModal";
 import { InventoryTable } from "./components/InventoryTable/InventoryTable";
 import { InventoryHeader } from "./components/InventoryHeader/InventoryHeader";
 import { ConfirmDeleteModal } from "../../components/ConfirmDeleteModal/ConfirmDeleteModal";
@@ -12,6 +13,7 @@ export default function Inventory() {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [form] = Form.useForm();
   const [quantityForm] = Form.useForm();
@@ -119,6 +121,11 @@ export default function Inventory() {
     setIsQuantityModalOpen(true);
   };
 
+  const handleHistoryClick = (record) => {
+    setSelectedItem(record);
+    setIsHistoryModalOpen(true);
+  };
+
   const handleDeleteClick = (record) => {
     setSelectedItem(record);
     setIsDeleteModalOpen(true);
@@ -178,12 +185,22 @@ export default function Inventory() {
         }}
       />
 
+      <InventoryHistoryModal
+        open={isHistoryModalOpen}
+        item={selectedItem}
+        onCancel={() => {
+          setIsHistoryModalOpen(false);
+          setSelectedItem(null);
+        }}
+      />
+
       <InventoryTable
         data={data}
         loading={loading}
         onEdit={handleEdit}
         onDelete={handleDeleteClick}
         onAdjustQuantity={handleAdjustQuantityClick}
+        onHistory={handleHistoryClick}
       />
     </div>
   );
