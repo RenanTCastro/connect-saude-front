@@ -25,6 +25,24 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     lineHeight: 1.6,
   },
+  heading1: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  heading2: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  heading3: {
+    fontSize: 12,
+    fontWeight: "bold",
+    marginTop: 12,
+    marginBottom: 4,
+  },
   bold: {
     fontWeight: "bold",
   },
@@ -76,12 +94,21 @@ const styles = StyleSheet.create({
   },
 });
 
+// Converte todas as formas de <br> em quebra de linha (\n) para não aparecer literal no PDF
+const brToNewline = (str) => {
+  if (!str || typeof str !== "string") return str;
+  return str.replace(/<br\s*\/?\s*>/gi, "\n");
+};
+
 // Função auxiliar para processar estilos inline (bold, italic, underline)
 const processInlineStyles = (text, depth = 0) => {
   if (!text || depth > 5) {
     // Limitar profundidade para evitar recursão infinita
-    return text ? text.replace(/<[^>]+>/g, "") : text;
+    const t = text ? brToNewline(text) : text;
+    return t ? t.replace(/<[^>]+>/g, "") : t;
   }
+
+  text = brToNewline(text);
 
   const parts = [];
   let currentIndex = 0;
@@ -142,7 +169,7 @@ const processInlineStyles = (text, depth = 0) => {
     }
   }
 
-  // Se não houver partes processadas, retornar o texto original sem tags
+  // Se não houver partes processadas, retornar texto sem tags (text já teve <br> → \n acima)
   if (parts.length === 0) {
     const cleanText = text.replace(/<[^>]+>/g, "");
     return cleanText || text;
@@ -151,92 +178,88 @@ const processInlineStyles = (text, depth = 0) => {
   return parts.length === 1 && typeof parts[0] === "string" ? parts[0] : parts;
 };
 
-// Função auxiliar para converter HTML simples para elementos do react-pdf
+// Função auxiliar para converter HTML simples para elementos do react-pdf (mantém ordem: h1-h6, p, ul)
 const parseHTML = (html) => {
   if (!html) return null;
+
+  html = brToNewline(html);
 
   const elements = [];
   let keyCounter = 0;
 
-  // Dividir HTML em blocos (parágrafos e listas)
-  // Primeiro, marcar listas para processar separadamente
-  const listPlaceholders = [];
-  let processedHtml = html;
-  const listMatches = html.match(/<ul[^>]*>[\s\S]*?<\/ul>/gi);
-  
-  if (listMatches) {
-    listMatches.forEach((listMatch, index) => {
-      const placeholder = `___LIST_${index}___`;
-      listPlaceholders.push(listMatch);
-      processedHtml = processedHtml.replace(listMatch, placeholder);
-    });
+  // Coletar todos os blocos na ordem em que aparecem no documento
+  const blocks = [];
+  const addBlock = (index, type, data) => blocks.push({ index, type, data });
+
+  // Encontrar títulos (h1 a h6)
+  const headingRegex = /<(h[1-6])[^>]*>([\s\S]*?)<\/\1>/gi;
+  let match;
+  while ((match = headingRegex.exec(html)) !== null) {
+    const level = parseInt(match[1].charAt(1), 10);
+    const content = match[2].replace(/<[^>]+>/g, "").trim();
+    if (content) addBlock(match.index, "heading", { level, content });
   }
 
-  // Processar parágrafos
-  const pMatches = processedHtml.match(/<p[^>]*>[\s\S]*?<\/p>/gi);
-  
-  if (pMatches) {
-    pMatches.forEach((pMatch) => {
-      // Verificar se contém placeholder de lista
-      const listPlaceholderMatch = pMatch.match(/___LIST_(\d+)___/);
-      if (listPlaceholderMatch) {
-        const listIndex = parseInt(listPlaceholderMatch[1], 10);
-        const listMatch = listPlaceholders[listIndex];
-        if (listMatch) {
-          const liMatches = listMatch.match(/<li[^>]*>(.*?)<\/li>/gi);
-          if (liMatches) {
-            liMatches.forEach((liMatch) => {
-              const content = liMatch.replace(/<li[^>]*>|<\/li>/gi, "").trim();
-              if (content) {
-                elements.push(
-                  <Text key={keyCounter++} style={styles.listItem}>
-                    • {processInlineStyles(content)}
-                  </Text>
-                );
-              }
-            });
+  // Encontrar parágrafos
+  const pRegex = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+  while ((match = pRegex.exec(html)) !== null) {
+    addBlock(match.index, "p", { raw: match[0], content: match[1].trim() });
+  }
+
+  // Encontrar listas ul
+  const ulRegex = /<ul[^>]*>([\s\S]*?)<\/ul>/gi;
+  while ((match = ulRegex.exec(html)) !== null) {
+    addBlock(match.index, "ul", { raw: match[0] });
+  }
+
+  // Ordenar por posição no documento
+  blocks.sort((a, b) => a.index - b.index);
+
+  const headingStyles = {
+    1: styles.heading1,
+    2: styles.heading2,
+    3: styles.heading3,
+    4: styles.heading3,
+    5: styles.heading3,
+    6: styles.heading3,
+  };
+
+  blocks.forEach((block) => {
+    if (block.type === "heading") {
+      const style = headingStyles[block.data.level] || styles.heading2;
+      elements.push(
+        <Text key={keyCounter++} style={style}>
+          {processInlineStyles(block.data.content)}
+        </Text>
+      );
+    } else if (block.type === "p") {
+      const content = block.data.content;
+      if (content) {
+        elements.push(
+          <Text key={keyCounter++} style={styles.paragraph}>
+            {processInlineStyles(content)}
+          </Text>
+        );
+      }
+    } else if (block.type === "ul") {
+      const liMatches = block.data.raw.match(/<li[^>]*>(.*?)<\/li>/gi);
+      if (liMatches) {
+        liMatches.forEach((liMatch) => {
+          const content = liMatch.replace(/<li[^>]*>|<\/li>/gi, "").trim();
+          if (content) {
+            elements.push(
+              <Text key={keyCounter++} style={styles.listItem}>
+                • {processInlineStyles(content)}
+              </Text>
+            );
           }
-        }
-      } else {
-        // Processar parágrafo normal
-        const content = pMatch.replace(/<p[^>]*>|<\/p>/gi, "").trim();
-        if (content) {
-          elements.push(
-            <Text key={keyCounter++} style={styles.paragraph}>
-              {processInlineStyles(content)}
-            </Text>
-          );
-        }
+        });
       }
-    });
-  }
+    }
+  });
 
-  // Processar listas que não estavam dentro de parágrafos
-  if (listMatches) {
-    listMatches.forEach((ulMatch, index) => {
-      // Verificar se já foi processada
-      const placeholder = `___LIST_${index}___`;
-      if (!processedHtml.includes(placeholder)) {
-        const liMatches = ulMatch.match(/<li[^>]*>(.*?)<\/li>/gi);
-        if (liMatches) {
-          liMatches.forEach((liMatch) => {
-            const content = liMatch.replace(/<li[^>]*>|<\/li>/gi, "").trim();
-            if (content) {
-              elements.push(
-                <Text key={keyCounter++} style={styles.listItem}>
-                  • {processInlineStyles(content)}
-                </Text>
-              );
-            }
-          });
-        }
-      }
-    });
-  }
-
-  // Se não houver elementos processados, processar texto bruto
   if (elements.length === 0) {
-    const cleanText = processedHtml.replace(/___LIST_\d+___/g, "").replace(/<[^>]+>/g, "").trim();
+    const cleanText = html.replace(/<[^>]+>/g, "").trim();
     if (cleanText) {
       elements.push(
         <Text key={keyCounter++} style={styles.body}>

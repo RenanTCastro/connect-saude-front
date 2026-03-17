@@ -28,6 +28,22 @@
   background-color: #e6f7ff;
 }
 
+.document-editor-container .editor-toolbar .ant-btn:not(.ant-btn-icon-only) {
+  font-weight: 600;
+  font-size: 12px;
+  min-width: 28px;
+  padding: 0 6px;
+}
+
+.document-editor-container .editor-toolbar-divider {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background-color: #d9d9d9;
+  vertical-align: middle;
+}
+
 .document-editor-container .editor-content {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 14px;

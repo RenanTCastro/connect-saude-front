@@ -19,6 +19,9 @@ import {
   UnderlineOutlined,
   UnorderedListOutlined,
   OrderedListOutlined,
+  AlignLeftOutlined,
+  AlignCenterOutlined,
+  AlignRightOutlined,
 } from "@ant-design/icons";
 import { getDocumentTemplate } from "../../utils/documentTemplates";
 import DocumentPDF from "../DocumentPDF/DocumentPDF";
@@ -201,6 +204,54 @@ export default function DocumentEditor({
                       icon={<OrderedListOutlined />}
                       onClick={() => execCommand("insertOrderedList")}
                       title="Lista ordenada"
+                    />
+                    <span className="editor-toolbar-divider" />
+                    <Button
+                      type="text"
+                      onClick={() => execCommand("formatBlock", "h1")}
+                      title="Título 1"
+                    >
+                      H1
+                    </Button>
+                    <Button
+                      type="text"
+                      onClick={() => execCommand("formatBlock", "h2")}
+                      title="Título 2"
+                    >
+                      H2
+                    </Button>
+                    <Button
+                      type="text"
+                      onClick={() => execCommand("formatBlock", "h3")}
+                      title="Título 3"
+                    >
+                      H3
+                    </Button>
+                    <Button
+                      type="text"
+                      onClick={() => execCommand("formatBlock", "p")}
+                      title="Texto normal"
+                    >
+                      P
+                    </Button>
+                    <span className="editor-toolbar-divider" />
+                    <Button
+                      type="text"
+                      icon={<AlignLeftOutlined />}
+                      onClick={() => execCommand("justifyLeft")}
+                      title="Alinhar à esquerda"
+                    />
+                    <Button
+                      type="text"
+                      icon={<AlignCenterOutlined />}
+                      onClick={() => execCommand("justifyCenter")}
+                      title="Centralizar"
+                    />
+                    <Button
+                      type="text"
+                      icon={<AlignRightOutlined />}
+                      onClick={() => execCommand("justifyRight")}
+                      title="Alinhar à direita"
                     />
                   </Space>
                 </div>
