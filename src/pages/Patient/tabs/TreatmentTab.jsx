@@ -41,6 +41,7 @@ import {
   createEvolutionEntry,
   deleteEvolutionEntry,
 } from "../../../services/treatmentService";
+import OdontogramGrid from "../../../components/OdontogramGrid/OdontogramGrid";
 import { requestUploadUrl, confirmUpload, getAttachments, getDownloadUrl } from "../../../services/attachmentService";
 
 const { Title, Text } = Typography;
@@ -87,7 +88,6 @@ export default function TreatmentTab({ patientId }) {
 
   const [annotations, setAnnotations] = useState([]);
   const [loadingAnnotations, setLoadingAnnotations] = useState(false);
-  const [odontogramView, setOdontogramView] = useState("dentes");
   const [dentition, setDentition] = useState("permanent");
 
   const [evolutionEntries, setEvolutionEntries] = useState([]);
@@ -275,15 +275,6 @@ export default function TreatmentTab({ patientId }) {
     },
   ];
 
-  const odontogramElementTypes = [
-    { key: "dentes", label: "Dentes" },
-    { key: "maxila", label: "Maxila" },
-    { key: "mandibula", label: "Mandíbula" },
-    { key: "face", label: "Face" },
-    { key: "arcada_superior", label: "Arcada Superior" },
-    { key: "arcada_inferior", label: "Arcada Inferior" },
-  ];
-
   const getAnnotationFor = (elementKey, elementType) =>
     annotations.find(
       (a) =>
@@ -291,6 +282,22 @@ export default function TreatmentTab({ patientId }) {
         a.element_type === elementType &&
         a.dentition === dentition
     );
+
+  const getSurfaceAnnotationsForTooth = (fdi) => {
+    const prefix = `${fdi}-`;
+    const surfaceCodes = ["B", "D", "L", "M", "O"];
+    const result = {};
+    surfaceCodes.forEach((code) => {
+      const annot = annotations.find(
+        (a) =>
+          a.element_type === "tooth_surface" &&
+          a.element_key === prefix + code &&
+          a.dentition === dentition
+      );
+      if (annot) result[code] = annot;
+    });
+    return result;
+  };
 
   const getTreatmentsForTooth = (fdi) =>
     treatments.filter((t) => t.target_type === "dente" && t.tooth_fdi === fdi);
@@ -316,6 +323,45 @@ export default function TreatmentTab({ patientId }) {
       fetchAnnotations();
     } catch (e) {
       messageApi.error("Erro ao salvar anotação.");
+    }
+  };
+
+  const handleDeleteOdontogramAnnotation = async (annotationId) => {
+    try {
+      await deleteOdontogramAnnotation(annotationId);
+      messageApi.success("Anotação removida.");
+      fetchAnnotations();
+    } catch (e) {
+      messageApi.error("Erro ao remover anotação.");
+    }
+  };
+
+  const handleSaveSurfaceAnnotation = async (fdi, surface, status, annotationText) => {
+    if (!patientId) return;
+    const elementKey = `${fdi}-${surface}`;
+    const existing = annotations.find(
+      (a) =>
+        a.element_type === "tooth_surface" &&
+        a.element_key === elementKey &&
+        a.dentition === dentition
+    );
+    try {
+      if (existing) {
+        await updateOdontogramAnnotation(existing.id, { status, annotation_text: annotationText ?? null });
+        messageApi.success("Anotação da face atualizada.");
+      } else {
+        await createOdontogramAnnotation(patientId, {
+          dentition,
+          element_type: "tooth_surface",
+          element_key: elementKey,
+          annotation_text: annotationText ?? null,
+          status,
+        });
+        messageApi.success("Anotação da face adicionada.");
+      }
+      fetchAnnotations();
+    } catch (e) {
+      messageApi.error("Erro ao salvar anotação da face.");
     }
   };
 
@@ -531,108 +577,19 @@ export default function TreatmentTab({ patientId }) {
       </Card>
 
       <Card size="small" title="Odontograma">
-        <Space style={{ marginBottom: 16 }} wrap>
-          <Select
-            value={dentition}
-            onChange={setDentition}
-            options={[
-              { value: "permanent", label: "Permanente" },
-              { value: "deciduous", label: "Decíduos" },
-            ]}
-            style={{ width: 140 }}
-          />
-          {odontogramElementTypes.map(({ key, label }) => (
-            <Button
-              key={key}
-              type={odontogramView === key ? "primary" : "default"}
-              onClick={() => setOdontogramView(key)}
-            >
-              {label}
-            </Button>
-          ))}
-        </Space>
-        {odontogramView === "dentes" && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {(dentition === "permanent" ? FDI_PERMANENT : FDI_DECIDUOUS).map((fdi) => {
-              const annot = getAnnotationFor(fdi, "tooth");
-              const linkedTreatments = getTreatmentsForTooth(fdi);
-              return (
-                <Card
-                  key={fdi}
-                  size="small"
-                  style={{ width: 120 }}
-                  title={`Dente ${fdi}`}
-                  extra={
-                    <Button
-                      type="link"
-                      size="small"
-                      onClick={() => {
-                        const text = prompt("Anotação / comentário", annot?.annotation_text || "");
-                        if (text !== null) handleSaveOdontogramAnnotation(fdi, "tooth", text, null, annot?.id);
-                      }}
-                    >
-                      {annot ? "Editar" : "Anotar"}
-                    </Button>
-                  }
-                >
-                  {annot?.annotation_text && <Text type="secondary" style={{ fontSize: 11 }}>{annot.annotation_text}</Text>}
-                  {linkedTreatments.length > 0 && (
-                    <div style={{ marginTop: 4 }}>
-                      {linkedTreatments.map((t) => (
-                        <Tag key={t.id} color="blue">{t.procedure_name || "Tratamento"}</Tag>
-                      ))}
-                    </div>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
-        )}
-        {odontogramView !== "dentes" && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {["maxila", "mandibula", "face", "arcada_superior", "arcada_inferior"]
-              .filter((t) => odontogramView === t)
-              .map((elementType) => {
-                const elementKey = elementType;
-                const annot = getAnnotationFor(elementKey, elementType);
-                const regionLabel = odontogramElementTypes.find((e) => e.key === elementType)?.label || elementType;
-                const regionForTreatment =
-                  elementType === "arcada_superior" || elementType === "maxila" ? "Superior"
-                  : elementType === "arcada_inferior" || elementType === "mandibula" ? "Inferior"
-                  : null;
-                const linkedTreatments = regionForTreatment ? getTreatmentsForRegion(regionForTreatment) : [];
-                return (
-                  <Card
-                    key={elementType}
-                    size="small"
-                    style={{ minWidth: 200 }}
-                    title={regionLabel}
-                    extra={
-                      <Button
-                        type="link"
-                        size="small"
-                        onClick={() => {
-                          const text = prompt("Anotação / comentário", annot?.annotation_text || "");
-                          if (text !== null) handleSaveOdontogramAnnotation(elementKey, elementType, text, null, annot?.id);
-                        }}
-                      >
-                        {annot ? "Editar" : "Anotar"}
-                      </Button>
-                    }
-                  >
-                    {annot?.annotation_text && <Text type="secondary">{annot.annotation_text}</Text>}
-                    {linkedTreatments.length > 0 && (
-                      <div style={{ marginTop: 4 }}>
-                        {linkedTreatments.map((t) => (
-                          <Tag key={t.id} color="blue">{t.procedure_name || "Tratamento"}</Tag>
-                        ))}
-                      </div>
-                    )}
-                  </Card>
-                );
-              })}
-          </div>
-        )}
+        <OdontogramGrid
+          inline
+          dentition={dentition}
+          onDentitionChange={setDentition}
+          annotations={annotations}
+          getAnnotationFor={getAnnotationFor}
+          getSurfaceAnnotationsForTooth={getSurfaceAnnotationsForTooth}
+          getTreatmentsForTooth={getTreatmentsForTooth}
+          onSaveAnnotation={handleSaveOdontogramAnnotation}
+          onSaveSurfaceAnnotation={handleSaveSurfaceAnnotation}
+          onDeleteAnnotation={handleDeleteOdontogramAnnotation}
+          onDeleteSurfaceAnnotation={handleDeleteOdontogramAnnotation}
+        />
       </Card>
 
       <Card
