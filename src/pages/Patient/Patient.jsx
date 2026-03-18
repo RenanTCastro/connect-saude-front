@@ -21,6 +21,7 @@ import { fetchAddressByCEP } from "../../utils/cep";
 import InfoTab from "./tabs/InfoTab";
 import AnamnesisTab from "./tabs/AnamnesisTab";
 import IncomesTab from "./tabs/IncomesTab";
+import TreatmentTab from "./tabs/TreatmentTab";
 import ImagesTab from "./tabs/ImagesTab";
 import DocumentsTab from "./tabs/DocumentsTab";
 import "./Styles.css";
@@ -181,6 +182,11 @@ export default function PatientDetails() {
             key: "incomes",
             label: "Débitos",
             children: <IncomesTab patientId={id} />,
+          },
+          {
+            key: "treatment",
+            label: "Tratamento",
+            children: <TreatmentTab patientId={id} />,
           },
           {
             key: "images",
