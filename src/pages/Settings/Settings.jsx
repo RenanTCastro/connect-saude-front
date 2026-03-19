@@ -12,6 +12,9 @@ import {
   Modal,
   Form,
   Input,
+  Row,
+  Col,
+  Upload,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -20,12 +23,25 @@ import {
   ReloadOutlined,
   StopOutlined,
   CheckOutlined,
+  UserOutlined,
+  PictureOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import api from "../../services/api";
+import { requestLogoUploadUrl, getLogoUrl, deleteLogo } from "../../services/profileService";
 import "./Styles.css";
 
 const { Title, Text, Paragraph } = Typography;
+
+const MAX_LOGO_SIZE = 15 * 1024 * 1024; // 15MB
+const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const WhatsAppIcon = ({ size = 24, color = "currentColor" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+  </svg>
+);
 
 export default function Settings() {
   const [messageApi, contextHolder] = message.useMessage();
@@ -36,7 +52,10 @@ export default function Settings() {
   const [profile, setProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [form] = Form.useForm();
+  const namePreview = Form.useWatch("name", form);
 
   // Verificar status da assinatura ao carregar
   useEffect(() => {
@@ -80,10 +99,22 @@ export default function Settings() {
       setProfileLoading(true);
       const res = await api.get("/me");
       setProfile(res.data);
-      if (res.data?.name) {
-        form.setFieldsValue({
-          name: res.data.name,
-        });
+      form.setFieldsValue({
+        name: res.data.name ?? "",
+        address: res.data.address ?? "",
+        cro_number: res.data.cro_number ?? "",
+        professional_phone: res.data.professional_phone ?? "",
+        specialty: res.data.specialty ?? "",
+      });
+      if (res.data?.logo_s3_key) {
+        try {
+          const logoRes = await getLogoUrl();
+          setLogoUrl(logoRes.url);
+        } catch {
+          setLogoUrl(null);
+        }
+      } else {
+        setLogoUrl(null);
       }
     } catch (err) {
       console.error(err);
@@ -98,6 +129,10 @@ export default function Settings() {
       setSavingProfile(true);
       const res = await api.put("/me", {
         name: values.name,
+        address: values.address || null,
+        cro_number: values.cro_number || null,
+        professional_phone: values.professional_phone || null,
+        specialty: values.specialty || null,
       });
 
       if (res.data?.user) {
@@ -112,6 +147,65 @@ export default function Settings() {
       messageApi.error(errorMessage);
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handleLogoUpload = async (file) => {
+    if (file.size > MAX_LOGO_SIZE) {
+      messageApi.error("Arquivo muito grande! O tamanho máximo permitido é 15MB.");
+      return false;
+    }
+    if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
+      messageApi.error("Formato não permitido. Use JPEG, PNG ou WebP.");
+      return false;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const { uploadUrl, s3Key } = await requestLogoUploadUrl(file);
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type || "image/jpeg" },
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error("Falha no upload");
+      }
+
+      await api.put("/me", {
+        name: form.getFieldValue("name"),
+        address: form.getFieldValue("address") || null,
+        cro_number: form.getFieldValue("cro_number") || null,
+        professional_phone: form.getFieldValue("professional_phone") || null,
+        specialty: form.getFieldValue("specialty") || null,
+        logo_s3_key: s3Key,
+      });
+
+      const profileRes = await api.get("/me");
+      setProfile(profileRes.data);
+      const logoRes = await getLogoUrl();
+      setLogoUrl(logoRes.url);
+      messageApi.success("Logo atualizada com sucesso!");
+    } catch (err) {
+      console.error(err);
+      messageApi.error(err.response?.data?.error || "Erro ao fazer upload da logo");
+    } finally {
+      setUploadingLogo(false);
+    }
+    return false; // Prevent default upload behavior
+  };
+
+  const handleLogoRemove = async () => {
+    try {
+      await deleteLogo();
+      setLogoUrl(null);
+      setProfile((p) => (p ? { ...p, logo_s3_key: null } : null));
+      messageApi.success("Logo removida com sucesso!");
+    } catch (err) {
+      console.error(err);
+      messageApi.error(err.response?.data?.error || "Erro ao remover logo");
     }
   };
 
@@ -207,17 +301,6 @@ export default function Settings() {
     return dayjs(date).format("DD/MM/YYYY");
   };
 
-  if (loading) {
-    return (
-      <div style={{ textAlign: "center", padding: "50px" }}>
-        <Spin size="large" />
-        <div style={{ marginTop: "16px" }}>
-          <Text>Carregando informações da assinatura...</Text>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="settings-container">
       {contextHolder}
@@ -258,6 +341,148 @@ export default function Settings() {
       <Card
         title={
           <Space>
+            <UserOutlined />
+            <span>Informações do profissional / clínica</span>
+          </Space>
+        }
+        style={{ marginBottom: "24px" }}
+      >
+        <Paragraph type="secondary" style={{ marginBottom: "16px" }}>
+          Este nome será usado nos lembretes enviados via WhatsApp para seus clientes.
+        </Paragraph>
+
+        {profileLoading ? (
+          <div style={{ textAlign: "center", padding: "16px" }}>
+            <Spin />
+          </div>
+        ) : (
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleUpdateProfile}
+            initialValues={{
+              name: profile?.name ?? "",
+              address: profile?.address ?? "",
+              cro_number: profile?.cro_number ?? "",
+              professional_phone: profile?.professional_phone ?? "",
+              specialty: profile?.specialty ?? "",
+            }}
+          >
+            <Row gutter={24}>
+              <Col xs={24} lg={12}>
+                <Form.Item
+                  name="name"
+                  label="Nome do profissional ou clínica"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Por favor, insira o nome que será exibido para os pacientes!",
+                    },
+                  ]}
+                >
+                  <Input placeholder="Nome do profissional ou clínica" maxLength={200} />
+                </Form.Item>
+
+                <Form.Item name="address" label="Endereço de atendimento">
+                  <Input.TextArea placeholder="Endereço completo (rua, número, bairro, cidade)" rows={3} maxLength={500} showCount />
+                </Form.Item>
+
+                <Form.Item name="cro_number" label="Número do CRO">
+                  <Input placeholder="Ex: 12345-SP" maxLength={50} />
+                </Form.Item>
+
+                <Form.Item name="professional_phone" label="Telefone profissional">
+                  <Input placeholder="(11) 99999-9999" maxLength={20} />
+                </Form.Item>
+
+                <Form.Item name="specialty" label="Especialidade">
+                  <Input placeholder="Ex: Ortodontia" maxLength={100} />
+                </Form.Item>
+
+                <Form.Item label="Logo da clínica">
+                  <Space direction="vertical" size="small">
+                    {logoUrl ? (
+                      <Space align="center">
+                        <img
+                          src={logoUrl}
+                          alt="Logo"
+                          style={{ maxWidth: 120, maxHeight: 120, objectFit: "contain", borderRadius: 8, border: "1px solid #d9d9d9" }}
+                        />
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          onClick={handleLogoRemove}
+                          loading={uploadingLogo}
+                        >
+                          Remover logo
+                        </Button>
+                      </Space>
+                    ) : (
+                      <Upload
+                        accept="image/jpeg,image/png,image/webp"
+                        showUploadList={false}
+                        beforeUpload={handleLogoUpload}
+                        maxCount={1}
+                      >
+                        <Button icon={<PictureOutlined />} loading={uploadingLogo}>
+                          Enviar logo (máx. 15MB)
+                        </Button>
+                      </Upload>
+                    )}
+                    <Text type="secondary" style={{ fontSize: "12px" }}>
+                      Formatos: JPEG, PNG ou WebP. Tamanho máximo: 15MB.
+                    </Text>
+                  </Space>
+                </Form.Item>
+
+                <Button type="primary" htmlType="submit" loading={savingProfile}>
+                  Salvar alterações
+                </Button>
+              </Col>
+              <Col xs={24} lg={12}>
+                <Paragraph type="secondary" style={{ marginBottom: "8px", fontSize: "13px" }}>
+                  Prévia nas notificações WhatsApp:
+                </Paragraph>
+                <div className="whatsapp-mockup-container">
+                  <div className="whatsapp-mockup">
+                    <div className="whatsapp-mockup-header">
+                      <div className="whatsapp-mockup-contact">
+                        <WhatsAppIcon size={20} color="#ffffff" />
+                        <div className="whatsapp-mockup-contact-info">
+                          <Text strong style={{ color: "#ffffff" }}>Connect Saúde</Text>
+                          <Text style={{ fontSize: "12px", color: "rgba(255, 255, 255, 0.9)" }}>online</Text>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="whatsapp-mockup-messages">
+                      <div className="whatsapp-message whatsapp-message-received">
+                        <div className="whatsapp-message-bubble">
+                          <Text>
+                            Olá, [Nome do paciente].
+                            <br />
+                            <br />
+                            Sua consulta está confirmada para dia 15/03/2024 às 14:00, na{" "}
+                            {namePreview?.trim() || "Seu nome ou clínica"}.
+                            <br />
+                            <br />
+                            Em caso de dúvidas ou necessidade de reagendamento, entre em contato com seu profissional de saúde.
+                          </Text>
+                        </div>
+                        <Text type="secondary" className="whatsapp-message-time">10:30</Text>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </Form>
+        )}
+      </Card>
+
+      <Card
+        title={
+          <Space>
             <CreditCardOutlined />
             <span>Assinatura</span>
           </Space>
@@ -273,7 +498,14 @@ export default function Settings() {
         }
         style={{ marginBottom: "24px" }}
       >
-        {subscriptionStatus?.hasSubscription && (subscriptionStatus?.status === "active" || subscriptionStatus?.status === "trialing") ? (
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "40px" }}>
+            <Spin size="large" />
+            <div style={{ marginTop: "16px" }}>
+              <Text>Carregando informações da assinatura...</Text>
+            </div>
+          </div>
+        ) : subscriptionStatus?.hasSubscription && (subscriptionStatus?.status === "active" || subscriptionStatus?.status === "trialing") ? (
           <>
             {subscriptionStatus?.status === "trialing" && !subscriptionStatus?.cancelAtPeriodEnd ? (
               <Alert
@@ -440,51 +672,6 @@ export default function Settings() {
               </Paragraph>
             </Space>
           </>
-        )}
-      </Card>
-
-      <Card
-        title="Informações do profissional / clínica"
-        style={{ marginBottom: "24px" }}
-      >
-        <Paragraph type="secondary" style={{ marginBottom: "16px" }}>
-          Este nome será usado nos lembretes enviados via WhatsApp para seus clientes.
-        </Paragraph>
-
-        {profileLoading ? (
-          <div style={{ textAlign: "center", padding: "16px" }}>
-            <Spin />
-          </div>
-        ) : (
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleUpdateProfile}
-            initialValues={{
-              name: profile?.name,
-            }}
-          >
-            <Form.Item
-              name="name"
-              label="Nome do profissional ou clínica"
-              rules={[
-                {
-                  required: true,
-                  message: "Por favor, insira o nome que será exibido para os pacientes!",
-                },
-              ]}
-            >
-              <Input placeholder="Nome do profissional ou clínica" maxLength={200} />
-            </Form.Item>
-
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={savingProfile}
-            >
-              Salvar alterações
-            </Button>
-          </Form>
         )}
       </Card>
     </div>
