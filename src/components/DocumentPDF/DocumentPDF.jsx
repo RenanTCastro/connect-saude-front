@@ -114,8 +114,8 @@ const processInlineStyles = (text, depth = 0) => {
   let currentIndex = 0;
   let keyCounter = 0;
 
-  // Regex para encontrar tags de estilo (suporta tags aninhadas simples)
-  const styleRegex = /<(strong|b|em|i|u)>(.*?)<\/\1>/gi;
+  // Regex para encontrar tags de estilo (suporta atributos como style="..." do contentEditable)
+  const styleRegex = /<(strong|b|em|i|u)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi;
   let match;
   const matches = [];
   
@@ -206,10 +206,24 @@ const parseHTML = (html) => {
     addBlock(match.index, "p", { raw: match[0], content: match[1].trim() });
   }
 
-  // Encontrar listas ul
+  // Encontrar listas ul e ol
   const ulRegex = /<ul[^>]*>([\s\S]*?)<\/ul>/gi;
   while ((match = ulRegex.exec(html)) !== null) {
     addBlock(match.index, "ul", { raw: match[0] });
+  }
+  const olRegex = /<ol[^>]*>([\s\S]*?)<\/ol>/gi;
+  while ((match = olRegex.exec(html)) !== null) {
+    addBlock(match.index, "ol", { raw: match[0] });
+  }
+
+  // Encontrar divs (contentEditable pode gerar div em vez de p)
+  // Só adicionar se o div não contiver blocos já processados (p, ul, ol, h) para evitar duplicação
+  const divRegex = /<div[^>]*>([\s\S]*?)<\/div>/gi;
+  while ((match = divRegex.exec(html)) !== null) {
+    const inner = match[1];
+    if (!/<(p|ul|ol|h[1-6])[\s>]/i.test(inner)) {
+      addBlock(match.index, "div", { content: inner.trim() });
+    }
   }
 
   // Ordenar por posição no documento
@@ -242,7 +256,7 @@ const parseHTML = (html) => {
         );
       }
     } else if (block.type === "ul") {
-      const liMatches = block.data.raw.match(/<li[^>]*>(.*?)<\/li>/gi);
+      const liMatches = block.data.raw.match(/<li[^>]*>([\s\S]*?)<\/li>/gi);
       if (liMatches) {
         liMatches.forEach((liMatch) => {
           const content = liMatch.replace(/<li[^>]*>|<\/li>/gi, "").trim();
@@ -255,6 +269,26 @@ const parseHTML = (html) => {
           }
         });
       }
+    } else if (block.type === "ol") {
+      const liMatches = block.data.raw.match(/<li[^>]*>([\s\S]*?)<\/li>/gi);
+      if (liMatches) {
+        liMatches.forEach((liMatch, idx) => {
+          const content = liMatch.replace(/<li[^>]*>|<\/li>/gi, "").trim();
+          if (content) {
+            elements.push(
+              <Text key={keyCounter++} style={styles.listItem}>
+                {idx + 1}. {processInlineStyles(content)}
+              </Text>
+            );
+          }
+        });
+      }
+    } else if (block.type === "div" && block.data.content) {
+      elements.push(
+        <Text key={keyCounter++} style={styles.paragraph}>
+          {processInlineStyles(block.data.content)}
+        </Text>
+      );
     }
   });
 

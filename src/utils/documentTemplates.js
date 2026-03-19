@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { marked } from "marked";
 
 export const DOCUMENT_TYPES = {
@@ -326,59 +327,23 @@ Assinatura do(a) Responsável Legal (quando aplicável)
     },
     
     [DOCUMENT_TYPES.PRESCRIPTION]: {
-      title: 'Receituário Médico',
-      body: mdToHtml(`
-## RECEITUÁRIO MÉDICO
-
-**Paciente:** ${patient?.full_name || '[NOME DO PACIENTE]'}
-**Data:** ____ de _______________ de _______
-**Idade:** ${patient?.birth_date ? '[IDADE]' : '[IDADE]'} anos
-
-**PRESCRIÇÃO:**
-
-<div data-prescription-list class="prescription-medications-list"></div>
-
-_________________________________________________________________
-_________________________________________________________________
-_________________________________________________________________
-_________________________________________________________________
-_________________________________________________________________
-_________________________________________________________________
-_________________________________________________________________
-_________________________________________________________________
-
-**ORIENTAÇÕES:**
-
-_________________________________________________________________
-_________________________________________________________________
-_________________________________________________________________
-      `),
+      title: 'Receituário',
+      defaultPrescriptionText: '',
+      defaultShowOrientacoes: false,
+      defaultOrientacoesText: '',
       hasPatientSignature: false,
       hasProfessionalSignature: true
     },
-    
+
     [DOCUMENT_TYPES.CERTIFICATE]: {
       title: 'Atestado Médico',
-      body: mdToHtml(`
-## ATESTADO MÉDICO
-
-Atesto para os devidos fins que o(a) paciente **${patient?.full_name || '[NOME DO PACIENTE]'}**, ${patient?.cpf ? `CPF ${patient.cpf}` : 'CPF [CPF]'}, esteve sob meus cuidados médicos no período de ____ de _______________ de _______ até ____ de _______________ de _______.
-
-**DIAGNÓSTICO:**
-
-_________________________________________________________________
-_________________________________________________________________
-
-**RECOMENDAÇÕES:**
-
-_________________________________________________________________
-_________________________________________________________________
-_________________________________________________________________
-
-Este atestado é válido para os fins a que se destina.
-
-Local e data: _______________, ____ de _______________ de _______.
-      `),
+      defaultPatientName: patient?.full_name || '',
+      defaultCpf: patient?.cpf || '',
+      defaultPeriodoAte: dayjs(),
+      defaultDiagnosticos: '',
+      defaultRecomendacoes: '',
+      defaultLocal: '',
+      defaultData: dayjs(),
       hasPatientSignature: false,
       hasProfessionalSignature: true
     },

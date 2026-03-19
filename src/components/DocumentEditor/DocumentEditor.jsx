@@ -11,6 +11,7 @@ import {
   message,
   AutoComplete,
   Tag,
+  DatePicker,
 } from "antd";
 import {
   EyeOutlined,
@@ -34,7 +35,31 @@ import dayjs from "dayjs";
 import "./DocumentEditor.css";
 
 const { Title } = Typography;
+const { TextArea } = Input;
 const MEDICATION_INPUT_MAX_LENGTH = 100;
+const TEXTAREA_MAX_LENGTH = 1000;
+
+/** Escapa texto para uso seguro em HTML */
+function escapeHtml(text) {
+  if (!text || typeof text !== "string") return "";
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/** Converte quebras de linha em <p> */
+function textToHtmlParagraphs(text) {
+  if (!text || typeof text !== "string") return "";
+  return text
+    .trim()
+    .split(/\n+/)
+    .filter((line) => line.trim())
+    .map((line) => `<p>${escapeHtml(line)}</p>`)
+    .join("");
+}
 
 export default function DocumentEditor({
   documentType,
@@ -59,7 +84,23 @@ export default function DocumentEditor({
   const [loadingMedications, setLoadingMedications] = useState(false);
   const medicationDebounceRef = useRef(null);
 
+  // Receituário: prescrição e orientações
+  const [prescriptionText, setPrescriptionText] = useState("");
+  const [showOrientacoes, setShowOrientacoes] = useState(false);
+  const [orientacoesText, setOrientacoesText] = useState("");
+
+  // Atestado
+  const [certificatePatientName, setCertificatePatientName] = useState("");
+  const [certificateCpf, setCertificateCpf] = useState("");
+  const [certificatePeriodoAte, setCertificatePeriodoAte] = useState(dayjs());
+  const [certificateDiagnosticos, setCertificateDiagnosticos] = useState("");
+  const [certificateRecomendacoes, setCertificateRecomendacoes] = useState("");
+  const [certificateLocal, setCertificateLocal] = useState("");
+  const [certificateData, setCertificateData] = useState(dayjs());
+
   const isPrescription = documentType === DOCUMENT_TYPES.PRESCRIPTION;
+  const isCertificate = documentType === DOCUMENT_TYPES.CERTIFICATE;
+  const isStructuredForm = isPrescription || isCertificate;
 
   const fetchMedicationOptions = useCallback(async (q) => {
     if (!q || String(q).trim().length < 2) {
@@ -101,44 +142,40 @@ export default function DocumentEditor({
     }
   }, []);
 
-  const insertMedicationIntoEditor = useCallback((medication) => {
-    if (!editorRef.current) return;
-    const container = editorRef.current.querySelector("[data-prescription-list]");
-    if (!container) return;
-    const line = `${medication.termo}${medication.apresentacao ? ` – ${medication.apresentacao}` : ""}`;
-    const p = document.createElement("p");
-    p.setAttribute("data-medication-id", String(medication.id));
-    p.textContent = line;
-    container.appendChild(p);
-    updateContent();
-  }, [updateContent]);
-
-  const removeMedicationFromEditor = useCallback((medicationId) => {
-    if (!editorRef.current) return;
-    const el = editorRef.current.querySelector(`[data-medication-id="${medicationId}"]`);
-    if (el) el.remove();
-    updateContent();
-  }, [updateContent]);
+  const getMedicationLine = (med) =>
+    `${med.termo}${med.apresentacao ? ` – ${med.apresentacao}` : ""}`;
 
   const handleAddMedication = useCallback((medication) => {
     const id = medication.id ?? `temp-${Date.now()}`;
     const med = { ...medication, id };
     if (selectedMedications.some((m) => String(m.id) === String(id))) return;
     setSelectedMedications((prev) => [...prev, med]);
-    insertMedicationIntoEditor(med);
+    const line = getMedicationLine(med);
+    setPrescriptionText((prev) => {
+      const next = prev ? `${prev}\n${line}` : line;
+      return next.slice(0, TEXTAREA_MAX_LENGTH);
+    });
     setMedicationSearchValue("");
     setMedicationOptions([]);
-  }, [selectedMedications, insertMedicationIntoEditor]);
+  }, [selectedMedications]);
 
   const handleRemoveMedication = useCallback((medication) => {
-    setSelectedMedications((prev) => prev.filter((m) => String(m.id) !== String(medication.id)));
-    removeMedicationFromEditor(medication.id);
-  }, [removeMedicationFromEditor]);
+    setSelectedMedications((prev) =>
+      prev.filter((m) => String(m.id) !== String(medication.id))
+    );
+    setPrescriptionText((prev) =>
+      prev
+        .split("\n")
+        .filter((line) => !line.includes(medication.termo))
+        .join("\n")
+        .trim()
+    );
+  }, []);
 
   const handleAddCustomMedication = useCallback(() => {
     const trimmed = medicationSearchValue?.trim();
-    if (!trimmed || trimmed.length < 2) {
-      messageApi.warning("Digite o termo do medicamento (mín. 2 caracteres).");
+    if (!trimmed || trimmed.length < 3) {
+      messageApi.warning("Digite o termo do medicamento (mín. 3 caracteres).");
       return;
     }
     handleAddMedication({ termo: trimmed, apresentacao: null });
@@ -147,7 +184,9 @@ export default function DocumentEditor({
   const showAddCustom =
     medicationSearchValue?.trim().length >= 2 &&
     medicationAutocompleteOptions.every(
-      (o) => o.medication?.termo?.toLowerCase() !== medicationSearchValue?.trim().toLowerCase()
+      (o) =>
+        o.medication?.termo?.toLowerCase() !==
+        medicationSearchValue?.trim().toLowerCase()
     );
 
   useEffect(() => {
@@ -159,26 +198,40 @@ export default function DocumentEditor({
     if (documentType && lastDocumentTypeRef.current !== documentType) {
       setSelectedMedications([]);
       const template = getDocumentTemplate(documentType, patient);
-      setDocumentTitle(template.title);
-      // Usar HTML diretamente no editor WYSIWYG
-      setDocumentBody(template.body);
-      setHasPatientSignature(template.hasPatientSignature);
-      setHasProfessionalSignature(template.hasProfessionalSignature);
-      
-      // Usar setTimeout para evitar atualizações durante render
+
+      setDocumentTitle(template.title ?? "");
+      setHasPatientSignature(template.hasPatientSignature ?? false);
+      setHasProfessionalSignature(template.hasProfessionalSignature ?? false);
+
+      if (isPrescription) {
+        setPrescriptionText(template.defaultPrescriptionText ?? "");
+        setShowOrientacoes(template.defaultShowOrientacoes ?? false);
+        setOrientacoesText(template.defaultOrientacoesText ?? "");
+      }
+
+      if (isCertificate) {
+        setCertificatePatientName(template.defaultPatientName ?? "");
+        setCertificateCpf(template.defaultCpf ?? "");
+        setCertificatePeriodoAte(template.defaultPeriodoAte ?? dayjs());
+        setCertificateDiagnosticos(template.defaultDiagnosticos ?? "");
+        setCertificateRecomendacoes(template.defaultRecomendacoes ?? "");
+        setCertificateLocal(template.defaultLocal ?? "");
+        setCertificateData(template.defaultData ?? dayjs());
+      }
+
+      if (!isStructuredForm) {
+        setDocumentBody(template.body ?? "");
+      }
+
       setTimeout(() => {
         form.setFieldsValue({
-          title: template.title,
-          hasPatientSignature: template.hasPatientSignature,
-          hasProfessionalSignature: template.hasProfessionalSignature,
+          title: template.title ?? "",
         });
-        
-        // Atualizar conteúdo do editor
-        if (editorRef.current) {
-          editorRef.current.innerHTML = template.body;
+        if (editorRef.current && !isStructuredForm) {
+          editorRef.current.innerHTML = template.body ?? "";
         }
       }, 0);
-      
+
       lastDocumentTypeRef.current = documentType;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -188,12 +241,7 @@ export default function DocumentEditor({
     setDocumentTitle(e.target.value);
   };
 
-
   const handlePreview = () => {
-    if (!documentTitle.trim()) {
-      messageApi.warning("Por favor, preencha o título do documento");
-      return;
-    }
     setShowPreview(true);
   };
 
@@ -211,10 +259,19 @@ export default function DocumentEditor({
     setSelectedMedications([]);
     setMedicationSearchValue("");
     setMedicationOptions([]);
+    setPrescriptionText("");
+    setShowOrientacoes(false);
+    setOrientacoesText("");
+    setCertificatePatientName("");
+    setCertificateCpf("");
+    setCertificatePeriodoAte(dayjs());
+    setCertificateDiagnosticos("");
+    setCertificateRecomendacoes("");
+    setCertificateLocal("");
+    setCertificateData(dayjs());
     onClose();
   };
 
-  // Funções de formatação do editor
   const execCommand = (command, value = null) => {
     document.execCommand(command, false, value);
     editorRef.current?.focus();
@@ -227,18 +284,349 @@ export default function DocumentEditor({
 
   const handleEditorPaste = (e) => {
     e.preventDefault();
-    const text = (e.clipboardData || window.clipboardData).getData('text');
-    document.execCommand('insertText', false, text);
+    const text = (e.clipboardData || window.clipboardData).getData("text");
+    document.execCommand("insertText", false, text);
     updateContent();
+  };
+
+  // Monta o body para PDF conforme o tipo de documento
+  const buildBodyForPDF = useCallback(() => {
+    if (isPrescription) {
+      const patientLine = `<p><strong>Paciente:</strong> ${escapeHtml(patient?.full_name || "[NOME DO PACIENTE]")}</p>`;
+      const dataLine = `<p><strong>Data:</strong> ${dayjs().format("DD/MM/YYYY")}</p>`;
+      const prescLabel = `<p><strong>PRESCRIÇÃO:</strong></p>`;
+      const prescContent = prescriptionText
+        ? textToHtmlParagraphs(prescriptionText)
+        : "<p></p>";
+      let body = `${patientLine}${dataLine}${prescLabel}${prescContent}`;
+      if (showOrientacoes && orientacoesText) {
+        body += `<p><strong>ORIENTAÇÕES:</strong></p>${textToHtmlParagraphs(orientacoesText)}`;
+      }
+      return body;
+    }
+
+    if (isCertificate) {
+      const patientName = certificatePatientName || patient?.full_name || "[NOME DO PACIENTE]";
+      const cpf = certificateCpf || patient?.cpf || "[CPF]";
+      const periodoStr = certificatePeriodoAte?.isValid?.()
+        ? certificatePeriodoAte.format("DD/MM/YYYY")
+        : dayjs().format("DD/MM/YYYY");
+      const dataStr = certificateData?.isValid?.()
+        ? certificateData.format("DD/MM/YYYY")
+        : dayjs().format("DD/MM/YYYY");
+      const local = certificateLocal || "";
+      const diag = certificateDiagnosticos || "";
+      const rec = certificateRecomendacoes || "";
+
+      let body = `<p>Atesto para os devidos fins que o(a) paciente <strong>${escapeHtml(patientName)}</strong>, CPF ${escapeHtml(cpf)}, esteve sob meus cuidados no período até ${periodoStr}.</p>`;
+      body += `<p><strong>DIAGNÓSTICO:</strong></p>${diag ? textToHtmlParagraphs(diag) : "<p></p>"}`;
+      body += `<p><strong>RECOMENDAÇÕES:</strong></p>${rec ? textToHtmlParagraphs(rec) : "<p></p>"}`;
+      body += `<p>Este atestado é válido para os fins a que se destina.</p>`;
+      body += `<p><strong>Local e data:</strong> ${escapeHtml(local)}${local ? ", " : ""}${dataStr}</p>`;
+      return body;
+    }
+
+    return (editorRef.current?.innerHTML ?? documentBody) || "";
+  }, [
+    isPrescription,
+    isCertificate,
+    patient,
+    prescriptionText,
+    showOrientacoes,
+    orientacoesText,
+    certificatePatientName,
+    certificateCpf,
+    certificatePeriodoAte,
+    certificateDiagnosticos,
+    certificateRecomendacoes,
+    certificateLocal,
+    certificateData,
+    documentBody,
+  ]);
+
+  const getPdfFileName = () => {
+    const base =
+      documentTitle.trim() ||
+      (isPrescription ? "Receituario" : isCertificate ? "Atestado" : "Documento");
+    return `${base}_${dayjs().format("YYYY-MM-DD")}.pdf`;
   };
 
   const documentData = {
     title: documentTitle,
-    body: documentBody || "",
+    body: buildBodyForPDF(),
     hasPatientSignature,
     hasProfessionalSignature,
     patient,
   };
+
+  const renderPrescriptionForm = () => (
+    <>
+      <Form.Item label="Adicionar medicamento">
+        <Space direction="vertical" style={{ width: "100%" }} size="small">
+          <Space.Compact style={{ width: "100%" }}>
+            <AutoComplete
+              value={medicationSearchValue}
+              options={[
+                ...medicationAutocompleteOptions,
+                ...(showAddCustom
+                  ? [
+                      {
+                        value: "__create__",
+                        label: `Adicionar: "${medicationSearchValue?.trim()}"`,
+                      },
+                    ]
+                  : []),
+              ]}
+              onSearch={onMedicationSearch}
+              onSelect={(v) => {
+                if (v === "__create__") {
+                  handleAddCustomMedication();
+                  return;
+                }
+                const opt = medicationAutocompleteOptions.find(
+                  (o) => String(o.value) === v
+                );
+                if (opt?.medication) handleAddMedication(opt.medication);
+              }}
+              placeholder="Buscar por termo ou apresentação (mín. 3 caracteres)"
+              style={{ flex: 1 }}
+              filterOption={false}
+              notFoundContent={loadingMedications ? "Buscando..." : null}
+              maxLength={MEDICATION_INPUT_MAX_LENGTH}
+            />
+            {showAddCustom && (
+              <Button
+                type="default"
+                onClick={handleAddCustomMedication}
+                icon={<PlusOutlined />}
+              >
+                Adicionar
+              </Button>
+            )}
+          </Space.Compact>
+          {selectedMedications.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {selectedMedications.map((m) => (
+                <Tag
+                  key={m.id}
+                  closable
+                  onClose={() => handleRemoveMedication(m)}
+                >
+                  {m.termo}
+                  {m.apresentacao ? ` – ${m.apresentacao}` : ""}
+                </Tag>
+              ))}
+            </div>
+          )}
+        </Space>
+      </Form.Item>
+
+      <Form.Item label="Prescrição">
+        <TextArea
+          value={prescriptionText}
+          onChange={(e) => setPrescriptionText(e.target.value)}
+          placeholder="Preenchido automaticamente com os medicamentos adicionados. Você pode editar o texto."
+          rows={6}
+          maxLength={TEXTAREA_MAX_LENGTH}
+          showCount
+        />
+      </Form.Item>
+
+      <Form.Item>
+        <Checkbox
+          checked={showOrientacoes}
+          onChange={(e) => setShowOrientacoes(e.target.checked)}
+        >
+          Mostrar orientações
+        </Checkbox>
+      </Form.Item>
+
+      {showOrientacoes && (
+        <Form.Item label="Orientações">
+          <TextArea
+            value={orientacoesText}
+            onChange={(e) => setOrientacoesText(e.target.value)}
+            placeholder="Digite as orientações ao paciente"
+            rows={4}
+            maxLength={TEXTAREA_MAX_LENGTH}
+            showCount
+          />
+        </Form.Item>
+      )}
+    </>
+  );
+
+  const renderCertificateForm = () => (
+    <>
+      <Form.Item label="Paciente">
+        <Input
+          value={certificatePatientName}
+          onChange={(e) => setCertificatePatientName(e.target.value)}
+          placeholder="Nome do paciente"
+        />
+      </Form.Item>
+
+      <Form.Item label="CPF">
+        <Input
+          value={certificateCpf}
+          onChange={(e) => setCertificateCpf(e.target.value)}
+          placeholder="CPF do paciente"
+        />
+      </Form.Item>
+
+      <Form.Item label="Período até">
+        <DatePicker
+          value={certificatePeriodoAte}
+          onChange={(d) => setCertificatePeriodoAte(d || dayjs())}
+          format="DD/MM/YYYY"
+          style={{ width: "100%" }}
+        />
+      </Form.Item>
+
+      <Form.Item label="Diagnósticos">
+        <TextArea
+          value={certificateDiagnosticos}
+          onChange={(e) => setCertificateDiagnosticos(e.target.value)}
+          placeholder="Descreva o(s) diagnóstico(s)"
+          rows={4}
+          maxLength={TEXTAREA_MAX_LENGTH}
+          showCount
+        />
+      </Form.Item>
+
+      <Form.Item label="Recomendações">
+        <TextArea
+          value={certificateRecomendacoes}
+          onChange={(e) => setCertificateRecomendacoes(e.target.value)}
+          placeholder="Descreva as recomendações"
+          rows={4}
+          maxLength={TEXTAREA_MAX_LENGTH}
+          showCount
+        />
+      </Form.Item>
+
+      <Form.Item label="Local e data">
+        <Space.Compact style={{ width: "100%" }}>
+          <Input
+            value={certificateLocal}
+            onChange={(e) => setCertificateLocal(e.target.value)}
+            placeholder="Local (ex: São Paulo)"
+            style={{ flex: 1 }}
+          />
+          <DatePicker
+            value={certificateData}
+            onChange={(d) => setCertificateData(d || dayjs())}
+            format="DD/MM/YYYY"
+          />
+        </Space.Compact>
+      </Form.Item>
+    </>
+  );
+
+  const renderRichTextEditor = () => (
+    <Form.Item label="Corpo do Documento">
+      <div className="rich-text-editor">
+        <div className="editor-toolbar">
+          <Space>
+            <Button
+              type="text"
+              icon={<BoldOutlined />}
+              onClick={() => execCommand("bold")}
+              title="Negrito"
+            />
+            <Button
+              type="text"
+              icon={<ItalicOutlined />}
+              onClick={() => execCommand("italic")}
+              title="Itálico"
+            />
+            <Button
+              type="text"
+              icon={<UnderlineOutlined />}
+              onClick={() => execCommand("underline")}
+              title="Sublinhado"
+            />
+            <Button
+              type="text"
+              icon={<UnorderedListOutlined />}
+              onClick={() => execCommand("insertUnorderedList")}
+              title="Lista não ordenada"
+            />
+            <Button
+              type="text"
+              icon={<OrderedListOutlined />}
+              onClick={() => execCommand("insertOrderedList")}
+              title="Lista ordenada"
+            />
+            <span className="editor-toolbar-divider" />
+            <Button
+              type="text"
+              onClick={() => execCommand("formatBlock", "h1")}
+              title="Título 1"
+            >
+              H1
+            </Button>
+            <Button
+              type="text"
+              onClick={() => execCommand("formatBlock", "h2")}
+              title="Título 2"
+            >
+              H2
+            </Button>
+            <Button
+              type="text"
+              onClick={() => execCommand("formatBlock", "h3")}
+              title="Título 3"
+            >
+              H3
+            </Button>
+            <Button
+              type="text"
+              onClick={() => execCommand("formatBlock", "p")}
+              title="Texto normal"
+            >
+              P
+            </Button>
+            <span className="editor-toolbar-divider" />
+            <Button
+              type="text"
+              icon={<AlignLeftOutlined />}
+              onClick={() => execCommand("justifyLeft")}
+              title="Alinhar à esquerda"
+            />
+            <Button
+              type="text"
+              icon={<AlignCenterOutlined />}
+              onClick={() => execCommand("justifyCenter")}
+              title="Centralizar"
+            />
+            <Button
+              type="text"
+              icon={<AlignRightOutlined />}
+              onClick={() => execCommand("justifyRight")}
+              title="Alinhar à direita"
+            />
+          </Space>
+        </div>
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleEditorInput}
+          onPaste={handleEditorPaste}
+          className="editor-content"
+          style={{
+            minHeight: "300px",
+            padding: "12px",
+            border: "1px solid #d9d9d9",
+            borderRadius: "0 0 6px 6px",
+            outline: "none",
+            overflowY: "auto",
+          }}
+          suppressContentEditableWarning={true}
+        />
+      </div>
+    </Form.Item>
+  );
 
   return (
     <>
@@ -257,178 +645,18 @@ export default function DocumentEditor({
           </Title>
 
           <Form form={form} layout="vertical">
-            <Form.Item
-              label="Título do Documento"
-              name="title"
-              rules={[
-                { required: true, message: "Por favor, insira o título!" },
-              ]}
-            >
+            <Form.Item label="Título do Documento" name="title">
               <Input
-                placeholder="Digite o título do documento"
+                placeholder="Digite o título do documento (opcional)"
                 value={documentTitle}
                 onChange={handleTitleChange}
                 size="large"
               />
             </Form.Item>
 
-            {isPrescription && (
-              <Form.Item label="Adicionar medicamento">
-                <Space direction="vertical" style={{ width: "100%" }} size="small">
-                  <Space.Compact style={{ width: "100%" }}>
-                    <AutoComplete
-                      value={medicationSearchValue}
-                      options={[
-                        ...medicationAutocompleteOptions,
-                        ...(showAddCustom
-                          ? [{ value: "__create__", label: `Adicionar: "${medicationSearchValue?.trim()}"` }]
-                          : []),
-                      ]}
-                      onSearch={onMedicationSearch}
-                      onSelect={(v) => {
-                        if (v === "__create__") {
-                          handleAddCustomMedication();
-                          return;
-                        }
-                        const opt = medicationAutocompleteOptions.find((o) => String(o.value) === v);
-                        if (opt?.medication) handleAddMedication(opt.medication);
-                      }}
-                      placeholder="Buscar por termo ou apresentação (mín. 2 caracteres)"
-                      style={{ flex: 1 }}
-                      filterOption={false}
-                      notFoundContent={loadingMedications ? "Buscando..." : null}
-                      maxLength={MEDICATION_INPUT_MAX_LENGTH}
-                    />
-                    {showAddCustom && (
-                      <Button
-                        type="default"
-                        onClick={handleAddCustomMedication}
-                        icon={<PlusOutlined />}
-                      >
-                        Adicionar
-                      </Button>
-                    )}
-                  </Space.Compact>
-                  {selectedMedications.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {selectedMedications.map((m) => (
-                        <Tag
-                          key={m.id}
-                          closable
-                          onClose={() => handleRemoveMedication(m)}
-                        >
-                          {m.termo}
-                          {m.apresentacao ? ` – ${m.apresentacao}` : ""}
-                        </Tag>
-                      ))}
-                    </div>
-                  )}
-                </Space>
-              </Form.Item>
-            )}
-
-            <Form.Item label="Corpo do Documento">
-              <div className="rich-text-editor">
-                <div className="editor-toolbar">
-                  <Space>
-                    <Button
-                      type="text"
-                      icon={<BoldOutlined />}
-                      onClick={() => execCommand("bold")}
-                      title="Negrito"
-                    />
-                    <Button
-                      type="text"
-                      icon={<ItalicOutlined />}
-                      onClick={() => execCommand("italic")}
-                      title="Itálico"
-                    />
-                    <Button
-                      type="text"
-                      icon={<UnderlineOutlined />}
-                      onClick={() => execCommand("underline")}
-                      title="Sublinhado"
-                    />
-                    <Button
-                      type="text"
-                      icon={<UnorderedListOutlined />}
-                      onClick={() => execCommand("insertUnorderedList")}
-                      title="Lista não ordenada"
-                    />
-                    <Button
-                      type="text"
-                      icon={<OrderedListOutlined />}
-                      onClick={() => execCommand("insertOrderedList")}
-                      title="Lista ordenada"
-                    />
-                    <span className="editor-toolbar-divider" />
-                    <Button
-                      type="text"
-                      onClick={() => execCommand("formatBlock", "h1")}
-                      title="Título 1"
-                    >
-                      H1
-                    </Button>
-                    <Button
-                      type="text"
-                      onClick={() => execCommand("formatBlock", "h2")}
-                      title="Título 2"
-                    >
-                      H2
-                    </Button>
-                    <Button
-                      type="text"
-                      onClick={() => execCommand("formatBlock", "h3")}
-                      title="Título 3"
-                    >
-                      H3
-                    </Button>
-                    <Button
-                      type="text"
-                      onClick={() => execCommand("formatBlock", "p")}
-                      title="Texto normal"
-                    >
-                      P
-                    </Button>
-                    <span className="editor-toolbar-divider" />
-                    <Button
-                      type="text"
-                      icon={<AlignLeftOutlined />}
-                      onClick={() => execCommand("justifyLeft")}
-                      title="Alinhar à esquerda"
-                    />
-                    <Button
-                      type="text"
-                      icon={<AlignCenterOutlined />}
-                      onClick={() => execCommand("justifyCenter")}
-                      title="Centralizar"
-                    />
-                    <Button
-                      type="text"
-                      icon={<AlignRightOutlined />}
-                      onClick={() => execCommand("justifyRight")}
-                      title="Alinhar à direita"
-                    />
-                  </Space>
-                </div>
-                <div
-                  ref={editorRef}
-                  contentEditable
-                  onInput={handleEditorInput}
-                  onPaste={handleEditorPaste}
-                  className="editor-content"
-                  style={{
-                    minHeight: "300px",
-                    padding: "12px",
-                    border: "1px solid #d9d9d9",
-                    borderRadius: "0 0 6px 6px",
-                    outline: "none",
-                    overflowY: "auto",
-                  }}
-                  suppressContentEditableWarning={true}
-                />
-              </div>
-            </Form.Item>
+            {isPrescription && renderPrescriptionForm()}
+            {isCertificate && renderCertificateForm()}
+            {!isStructuredForm && renderRichTextEditor()}
 
             <Form.Item>
               <Space direction="vertical" size="middle">
@@ -459,15 +687,15 @@ export default function DocumentEditor({
                 </Button>
                 <PDFDownloadLink
                   document={<DocumentPDF {...documentData} />}
-                  fileName={`${documentTitle || "Documento"}_${dayjs().format("YYYY-MM-DD")}.pdf`}
+                  fileName={getPdfFileName()}
                   style={{ textDecoration: "none" }}
                 >
-                  {({ blob, url, loading: pdfLoading, error }) => (
+                  {({ loading: pdfLoading }) => (
                     <Button
                       type="primary"
                       icon={<FilePdfOutlined />}
                       loading={pdfLoading}
-                      disabled={pdfLoading || !documentTitle.trim()}
+                      disabled={pdfLoading}
                       size="large"
                     >
                       {pdfLoading ? "Gerando PDF..." : "Exportar PDF"}
