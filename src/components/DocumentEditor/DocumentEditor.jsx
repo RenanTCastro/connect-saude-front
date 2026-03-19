@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import React from "react";
 import {
   Modal,
@@ -9,6 +9,8 @@ import {
   Space,
   Typography,
   message,
+  AutoComplete,
+  Tag,
 } from "antd";
 import {
   EyeOutlined,
@@ -22,14 +24,17 @@ import {
   AlignLeftOutlined,
   AlignCenterOutlined,
   AlignRightOutlined,
+  PlusOutlined,
 } from "@ant-design/icons";
-import { getDocumentTemplate } from "../../utils/documentTemplates";
+import { getDocumentTemplate, DOCUMENT_TYPES } from "../../utils/documentTemplates";
+import { searchMedications } from "../../services/prescriptionMedicationService";
 import DocumentPDF from "../DocumentPDF/DocumentPDF";
 import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer";
 import dayjs from "dayjs";
 import "./DocumentEditor.css";
 
 const { Title } = Typography;
+const MEDICATION_INPUT_MAX_LENGTH = 100;
 
 export default function DocumentEditor({
   documentType,
@@ -47,6 +52,104 @@ export default function DocumentEditor({
   const lastDocumentTypeRef = useRef(null);
   const editorRef = useRef(null);
 
+  // Medicamentos (somente para receituário)
+  const [medicationSearchValue, setMedicationSearchValue] = useState("");
+  const [selectedMedications, setSelectedMedications] = useState([]);
+  const [medicationOptions, setMedicationOptions] = useState([]);
+  const [loadingMedications, setLoadingMedications] = useState(false);
+  const medicationDebounceRef = useRef(null);
+
+  const isPrescription = documentType === DOCUMENT_TYPES.PRESCRIPTION;
+
+  const fetchMedicationOptions = useCallback(async (q) => {
+    if (!q || String(q).trim().length < 2) {
+      setMedicationOptions([]);
+      return;
+    }
+    setLoadingMedications(true);
+    try {
+      const list = await searchMedications(q);
+      setMedicationOptions(list || []);
+    } catch {
+      setMedicationOptions([]);
+      messageApi.error("Erro ao buscar medicamentos.");
+    } finally {
+      setLoadingMedications(false);
+    }
+  }, [messageApi]);
+
+  const onMedicationSearch = useCallback((value) => {
+    const v = (value ?? "").slice(0, MEDICATION_INPUT_MAX_LENGTH);
+    setMedicationSearchValue(v);
+    if (medicationDebounceRef.current) clearTimeout(medicationDebounceRef.current);
+    medicationDebounceRef.current = setTimeout(() => {
+      fetchMedicationOptions(v);
+    }, 300);
+  }, [fetchMedicationOptions]);
+
+  const medicationAutocompleteOptions = useMemo(() => {
+    return medicationOptions.map((m) => ({
+      value: String(m.id),
+      label: m.apresentacao ? `${m.termo} – ${m.apresentacao}` : m.termo,
+      medication: m,
+    }));
+  }, [medicationOptions]);
+
+  const updateContent = useCallback(() => {
+    if (editorRef.current) {
+      setDocumentBody(editorRef.current.innerHTML);
+    }
+  }, []);
+
+  const insertMedicationIntoEditor = useCallback((medication) => {
+    if (!editorRef.current) return;
+    const container = editorRef.current.querySelector("[data-prescription-list]");
+    if (!container) return;
+    const line = `${medication.termo}${medication.apresentacao ? ` – ${medication.apresentacao}` : ""}`;
+    const p = document.createElement("p");
+    p.setAttribute("data-medication-id", String(medication.id));
+    p.textContent = line;
+    container.appendChild(p);
+    updateContent();
+  }, [updateContent]);
+
+  const removeMedicationFromEditor = useCallback((medicationId) => {
+    if (!editorRef.current) return;
+    const el = editorRef.current.querySelector(`[data-medication-id="${medicationId}"]`);
+    if (el) el.remove();
+    updateContent();
+  }, [updateContent]);
+
+  const handleAddMedication = useCallback((medication) => {
+    const id = medication.id ?? `temp-${Date.now()}`;
+    const med = { ...medication, id };
+    if (selectedMedications.some((m) => String(m.id) === String(id))) return;
+    setSelectedMedications((prev) => [...prev, med]);
+    insertMedicationIntoEditor(med);
+    setMedicationSearchValue("");
+    setMedicationOptions([]);
+  }, [selectedMedications, insertMedicationIntoEditor]);
+
+  const handleRemoveMedication = useCallback((medication) => {
+    setSelectedMedications((prev) => prev.filter((m) => String(m.id) !== String(medication.id)));
+    removeMedicationFromEditor(medication.id);
+  }, [removeMedicationFromEditor]);
+
+  const handleAddCustomMedication = useCallback(() => {
+    const trimmed = medicationSearchValue?.trim();
+    if (!trimmed || trimmed.length < 2) {
+      messageApi.warning("Digite o termo do medicamento (mín. 2 caracteres).");
+      return;
+    }
+    handleAddMedication({ termo: trimmed, apresentacao: null });
+  }, [medicationSearchValue, handleAddMedication, messageApi]);
+
+  const showAddCustom =
+    medicationSearchValue?.trim().length >= 2 &&
+    medicationAutocompleteOptions.every(
+      (o) => o.medication?.termo?.toLowerCase() !== medicationSearchValue?.trim().toLowerCase()
+    );
+
   useEffect(() => {
     if (!open) {
       lastDocumentTypeRef.current = null;
@@ -54,6 +157,7 @@ export default function DocumentEditor({
     }
 
     if (documentType && lastDocumentTypeRef.current !== documentType) {
+      setSelectedMedications([]);
       const template = getDocumentTemplate(documentType, patient);
       setDocumentTitle(template.title);
       // Usar HTML diretamente no editor WYSIWYG
@@ -104,6 +208,9 @@ export default function DocumentEditor({
     setHasPatientSignature(false);
     setHasProfessionalSignature(false);
     setShowPreview(false);
+    setSelectedMedications([]);
+    setMedicationSearchValue("");
+    setMedicationOptions([]);
     onClose();
   };
 
@@ -112,12 +219,6 @@ export default function DocumentEditor({
     document.execCommand(command, false, value);
     editorRef.current?.focus();
     updateContent();
-  };
-
-  const updateContent = () => {
-    if (editorRef.current) {
-      setDocumentBody(editorRef.current.innerHTML);
-    }
   };
 
   const handleEditorInput = () => {
@@ -170,6 +271,61 @@ export default function DocumentEditor({
                 size="large"
               />
             </Form.Item>
+
+            {isPrescription && (
+              <Form.Item label="Adicionar medicamento">
+                <Space direction="vertical" style={{ width: "100%" }} size="small">
+                  <Space.Compact style={{ width: "100%" }}>
+                    <AutoComplete
+                      value={medicationSearchValue}
+                      options={[
+                        ...medicationAutocompleteOptions,
+                        ...(showAddCustom
+                          ? [{ value: "__create__", label: `Adicionar: "${medicationSearchValue?.trim()}"` }]
+                          : []),
+                      ]}
+                      onSearch={onMedicationSearch}
+                      onSelect={(v) => {
+                        if (v === "__create__") {
+                          handleAddCustomMedication();
+                          return;
+                        }
+                        const opt = medicationAutocompleteOptions.find((o) => String(o.value) === v);
+                        if (opt?.medication) handleAddMedication(opt.medication);
+                      }}
+                      placeholder="Buscar por termo ou apresentação (mín. 2 caracteres)"
+                      style={{ flex: 1 }}
+                      filterOption={false}
+                      notFoundContent={loadingMedications ? "Buscando..." : null}
+                      maxLength={MEDICATION_INPUT_MAX_LENGTH}
+                    />
+                    {showAddCustom && (
+                      <Button
+                        type="default"
+                        onClick={handleAddCustomMedication}
+                        icon={<PlusOutlined />}
+                      >
+                        Adicionar
+                      </Button>
+                    )}
+                  </Space.Compact>
+                  {selectedMedications.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {selectedMedications.map((m) => (
+                        <Tag
+                          key={m.id}
+                          closable
+                          onClose={() => handleRemoveMedication(m)}
+                        >
+                          {m.termo}
+                          {m.apresentacao ? ` – ${m.apresentacao}` : ""}
+                        </Tag>
+                      ))}
+                    </div>
+                  )}
+                </Space>
+              </Form.Item>
+            )}
 
             <Form.Item label="Corpo do Documento">
               <div className="rich-text-editor">

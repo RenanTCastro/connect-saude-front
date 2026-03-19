@@ -336,6 +336,8 @@ Assinatura do(a) Responsável Legal (quando aplicável)
 
 **PRESCRIÇÃO:**
 
+<div data-prescription-list class="prescription-medications-list"></div>
+
 _________________________________________________________________
 _________________________________________________________________
 _________________________________________________________________
