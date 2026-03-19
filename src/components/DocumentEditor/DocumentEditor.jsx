@@ -14,6 +14,7 @@ import {
   Tag,
   DatePicker,
   TimePicker,
+  Radio,
 } from "antd";
 import {
   EyeOutlined,
@@ -31,9 +32,11 @@ import {
 } from "@ant-design/icons";
 import { getDocumentTemplate, DOCUMENT_TYPES } from "../../utils/documentTemplates";
 import { searchMedications } from "../../services/prescriptionMedicationService";
+import api from "../../services/api";
 import DocumentPDF from "../DocumentPDF/DocumentPDF";
 import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer";
 import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
 import "./DocumentEditor.css";
 
 const { Title } = Typography;
@@ -105,9 +108,21 @@ export default function DocumentEditor({
   const [certificateDiasRepouso, setCertificateDiasRepouso] = useState(null);
   const [certificateLocal, setCertificateLocal] = useState("");
 
+  // Termo de consentimento
+  const [consentPatientName, setConsentPatientName] = useState("");
+  const [consentDocumento, setConsentDocumento] = useState("");
+  const [consentResponsavel, setConsentResponsavel] = useState("");
+  const [consentNomeDentista, setConsentNomeDentista] = useState("");
+  const [consentProcedimento, setConsentProcedimento] = useState("");
+  const [consentRiscos, setConsentRiscos] = useState("");
+  const [consentAutorizaImagem, setConsentAutorizaImagem] = useState(null);
+  const [consentLocal, setConsentLocal] = useState("");
+  const [consentData, setConsentData] = useState(dayjs());
+
   const isPrescription = documentType === DOCUMENT_TYPES.PRESCRIPTION;
   const isCertificate = documentType === DOCUMENT_TYPES.CERTIFICATE;
-  const isStructuredForm = isPrescription || isCertificate;
+  const isConsent = documentType === DOCUMENT_TYPES.CONSENT;
+  const isStructuredForm = isPrescription || isCertificate || isConsent;
 
   const fetchMedicationOptions = useCallback(async (q) => {
     if (!q || String(q).trim().length < 2) {
@@ -233,6 +248,26 @@ export default function DocumentEditor({
         setCertificateLocal(template.defaultLocal ?? "");
       }
 
+      if (isConsent) {
+        setConsentPatientName(template.defaultPatientName ?? "");
+        setConsentDocumento(template.defaultDocumento ?? "");
+        setConsentResponsavel(template.defaultResponsavel ?? "");
+        setConsentNomeDentista(template.defaultNomeDentista ?? "");
+        setConsentProcedimento(template.defaultProcedimento ?? "");
+        setConsentRiscos(template.defaultRiscos ?? "");
+        setConsentAutorizaImagem(template.defaultAutorizaImagem ?? null);
+        setConsentLocal(template.defaultLocal ?? "");
+        setConsentData(template.defaultData ?? dayjs());
+        api
+          .get("/me")
+          .then((res) => {
+            if (res.data?.name) {
+              setConsentNomeDentista(res.data.name);
+            }
+          })
+          .catch(() => {});
+      }
+
       if (!isStructuredForm) {
         setDocumentBody(template.body ?? "");
       }
@@ -288,6 +323,15 @@ export default function DocumentEditor({
     setCertificateData(dayjs());
     setCertificateDiasRepouso(null);
     setCertificateLocal("");
+    setConsentPatientName("");
+    setConsentDocumento("");
+    setConsentResponsavel("");
+    setConsentNomeDentista("");
+    setConsentProcedimento("");
+    setConsentRiscos("");
+    setConsentAutorizaImagem(null);
+    setConsentLocal("");
+    setConsentData(dayjs());
     onClose();
   };
 
@@ -359,10 +403,58 @@ export default function DocumentEditor({
       return body;
     }
 
+    if (isConsent) {
+      const paciente = consentPatientName || patient?.full_name || "[NOME COMPLETO]";
+      const doc = consentDocumento || patient?.cpf || "[000.000.000-00]";
+      const resp = consentResponsavel || " - ";
+      const dentista = consentNomeDentista || "[Nome do Dentista]";
+      const procedimento = consentProcedimento || "";
+      const riscos = consentRiscos || "";
+      const local = consentLocal || "[Cidade/UF]";
+      const dataObj = consentData?.isValid?.() ? consentData : dayjs();
+      const dataDia = dataObj.format("DD");
+      const dataMes = dataObj.locale("pt-br").format("MMMM");
+      const dataAno = dataObj.format("YYYY");
+
+      let body = `<h2>Termo de Consentimento Livre e Esclarecido</h2>`;
+
+      body += `<h3>1. Identificação</h3>`;
+      body += `<p><strong>Paciente:</strong> ${escapeHtml(paciente)}</p>`;
+      body += `<p><strong>Documento (CPF/RG):</strong> ${escapeHtml(doc)}</p>`;
+      body += `<p><strong>Responsável Legal (se aplicável):</strong> ${escapeHtml(resp)}</p>`;
+
+      body += `<h3>2. Descrição do Procedimento</h3>`;
+      body += `<p>Eu, acima identificado(a), autorizo o(a) Dr(a). ${escapeHtml(dentista)} e sua equipe assistente a realizar o seguinte procedimento/tratamento:</p>`;
+      body += `<p><strong>Procedimento:</strong></p>`;
+      body += procedimento ? textToHtmlParagraphs(procedimento) : `<p><em>(Espaço para o dentista descrever o tratamento de forma clara)</em></p>`;
+
+      body += `<h3>3. Esclarecimentos e Riscos</h3>`;
+      body += `<p>Fui devidamente informado(a) sobre a natureza do tratamento, seus objetivos e os riscos inerentes, tais como:</p>`;
+      body += riscos ? textToHtmlParagraphs(riscos) : `<p><em>[Campo editável para riscos específicos: ex: edema, sensibilidade, sangramento, etc.]</em></p>`;
+      body += `<p>Compreendo que, durante o ato operatório, situações imprevistas podem exigir procedimentos complementares aos inicialmente planejados.</p>`;
+
+      body += `<h3>4. Responsabilidades do Paciente</h3>`;
+      body += `<p>Estou ciente de que o sucesso do tratamento depende diretamente do cumprimento das orientações pós-operatórias e da manutenção da higiene bucal conforme prescrito. Comprometo-me a:</p>`;
+      body += `<p>Informar fielmente meu histórico de saúde e uso de medicamentos.</p>`;
+      body += `<p>Comparecer às consultas de retorno agendadas.</p>`;
+
+      body += `<h3>5. Autorização de Uso de Imagem (Opcional)</h3>`;
+      const marcarAutorizo = consentAutorizaImagem === true ? "X" : " ";
+      const marcarNaoAutorizo = consentAutorizaImagem === false ? "X" : " ";
+      body += `<p>( ${marcarAutorizo} ) Autorizo | ( ${marcarNaoAutorizo} ) Não autorizo o uso de fotografias ou radiografias do meu tratamento para fins de prontuário, estudos científicos ou documentação clínica, preservando sempre minha identidade.</p>`;
+
+      body += `<h3>6. Declaração de Consentimento</h3>`;
+      body += `<p>Declaro que tive a oportunidade de esclarecer todas as minhas dúvidas e que compreendo as informações aqui contidas. Por livre vontade, consinto com o tratamento proposto.</p>`;
+      body += `<p><strong>Local e Data:</strong> ${escapeHtml(local)}, ${escapeHtml(dataDia)} de ${escapeHtml(dataMes)} de ${escapeHtml(dataAno)}.</p>`;
+
+      return body;
+    }
+
     return (editorRef.current?.innerHTML ?? documentBody) || "";
   }, [
     isPrescription,
     isCertificate,
+    isConsent,
     patient,
     prescriptionText,
     showOrientacoes,
@@ -375,13 +467,28 @@ export default function DocumentEditor({
     certificateData,
     certificateDiasRepouso,
     certificateLocal,
+    consentPatientName,
+    consentDocumento,
+    consentResponsavel,
+    consentNomeDentista,
+    consentProcedimento,
+    consentRiscos,
+    consentAutorizaImagem,
+    consentLocal,
+    consentData,
     documentBody,
   ]);
 
   const getPdfFileName = () => {
     const base =
       documentTitle.trim() ||
-      (isPrescription ? "Receituario" : isCertificate ? "Atestado" : "Documento");
+      (isPrescription
+        ? "Receituario"
+        : isCertificate
+          ? "Atestado"
+          : isConsent
+            ? "Termo_Consentimento"
+            : "Documento");
     return `${base}_${dayjs().format("YYYY-MM-DD")}.pdf`;
   };
 
@@ -568,6 +675,103 @@ export default function DocumentEditor({
     </>
   );
 
+  const renderConsentForm = () => (
+    <>
+      <Form.Item label="Nome do paciente">
+        <Input
+          value={consentPatientName}
+          onChange={(e) => setConsentPatientName(e.target.value)}
+          placeholder="Nome completo"
+        />
+      </Form.Item>
+
+      <Form.Item label="Documento (CPF/RG)">
+        <Input
+          value={consentDocumento}
+          onChange={(e) => setConsentDocumento(e.target.value)}
+          placeholder="000.000.000-00"
+        />
+      </Form.Item>
+
+      <Form.Item
+        label="Responsável legal"
+        extra="Opcional. Preencher quando aplicável (menores, tutelados)."
+      >
+        <Input
+          value={consentResponsavel}
+          onChange={(e) => setConsentResponsavel(e.target.value)}
+          placeholder="Nome do Responsável"
+        />
+      </Form.Item>
+
+      <Form.Item label="Nome do dentista">
+        <Input
+          value={consentNomeDentista}
+          onChange={(e) => setConsentNomeDentista(e.target.value)}
+          placeholder="Dr(a). Nome do Dentista"
+        />
+      </Form.Item>
+
+      <Form.Item
+        label="Procedimento"
+        extra="Descreva o tratamento de forma clara para o paciente."
+      >
+        <TextArea
+          value={consentProcedimento}
+          onChange={(e) => setConsentProcedimento(e.target.value)}
+          placeholder="Ex: restauração em resina no elemento 16, canal em 2 sessões..."
+          rows={4}
+          maxLength={TEXTAREA_MAX_LENGTH}
+          showCount
+        />
+      </Form.Item>
+
+      <Form.Item
+        label="Riscos específicos"
+        extra="Ex: edema, sensibilidade, sangramento, etc."
+      >
+        <TextArea
+          value={consentRiscos}
+          onChange={(e) => setConsentRiscos(e.target.value)}
+          placeholder="Ex: edema, sensibilidade, sangramento, dor pós-operatória..."
+          rows={4}
+          maxLength={TEXTAREA_MAX_LENGTH}
+          showCount
+        />
+      </Form.Item>
+
+      <Form.Item
+        label="Autorização de uso de imagem"
+        extra="Fotografias ou radiografias para prontuário, estudos científicos ou documentação clínica."
+      >
+        <Radio.Group
+          value={consentAutorizaImagem}
+          onChange={(e) => setConsentAutorizaImagem(e.target.value)}
+        >
+          <Radio value={true}>Autorizo</Radio>
+          <Radio value={false}>Não autorizo</Radio>
+        </Radio.Group>
+      </Form.Item>
+
+      <Form.Item label="Local e data">
+        <Space.Compact style={{ width: "100%" }}>
+          <Input
+            value={consentLocal}
+            onChange={(e) => setConsentLocal(e.target.value)}
+            placeholder="Cidade/UF (ex: São Paulo/SP)"
+            style={{ flex: 1 }}
+          />
+          <DatePicker
+            value={consentData}
+            onChange={(d) => setConsentData(d || dayjs())}
+            format="DD/MM/YYYY"
+            placeholder="Data"
+          />
+        </Space.Compact>
+      </Form.Item>
+    </>
+  );
+
   const renderRichTextEditor = () => (
     <Form.Item label="Corpo do Documento">
       <div className="rich-text-editor">
@@ -701,6 +905,7 @@ export default function DocumentEditor({
 
             {isPrescription && renderPrescriptionForm()}
             {isCertificate && renderCertificateForm()}
+            {isConsent && renderConsentForm()}
             {!isStructuredForm && renderRichTextEditor()}
 
             <Form.Item>

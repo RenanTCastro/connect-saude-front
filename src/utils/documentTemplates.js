@@ -171,157 +171,16 @@ CONTRATADO(A)
     },
     
     [DOCUMENT_TYPES.CONSENT]: {
-      title: 'Termo de Consentimento Livre e Esclarecido — Procedimentos Odontológicos',
-      body: mdToHtml(`
-## TERMO DE CONSENTIMENTO LIVRE E ESCLARECIDO
-### TCLE — PROCEDIMENTOS ODONTOLÓGICOS
-*Conforme Código de Ética Odontológica (CFO) e legislação vigente*
-
-## 1. IDENTIFICAÇÃO DAS PARTES
-
-**Paciente:**
-
-**${patient?.full_name || '[NOME DO PACIENTE]'}**  
-Data de Nascimento: ${patient?.birth_date || '[DATA DE NASCIMENTO]'}  
-CPF: ${patient?.cpf || '[CPF]'}  
-RG: ${patient?.rg || '[RG]'}  
-Telefone: ${patient?.phone || '[TELEFONE]'}  
-E-mail: ${patient?.email || '[E-MAIL]'}
-
-**Responsável legal (quando aplicável):**  
-${patient?.responsible_name || '[NOME DO RESPONSÁVEL]'} – CPF: ${patient?.responsible_cpf || '[CPF]'}  
-Grau de parentesco ou vínculo: ${patient?.responsible_relationship || '[VÍNCULO]'}
-
-## 2. PROFISSIONAL RESPONSÁVEL
-
-**Cirurgião(ã)-Dentista:** [NOME DO DENTISTA]  
-**CRO:** [CRO]  
-**Especialidade (se aplicável):** [ESPECIALIDADE]  
-**Nome da Clínica / Consultório:** [NOME DA CLÍNICA]  
-**Endereço:** [ENDEREÇO DA CLÍNICA]
-
-## 3. PROCEDIMENTO(S) PROPOSTO(S)
-
-O(A) paciente declara ter sido informado(a) pelo(a) Cirurgião(ã)-Dentista [NOME DO DENTISTA], CRO [CRO], sobre o(s) seguinte(s) procedimento(s) a ser(em) realizado(s):
-
-**Denominação do procedimento:** [NOME DO PROCEDIMENTO]  
-**Dente(s) / Região(ões) envolvida(s):** [DENTES/REGIÕES]  
-**Número estimado de sessões:** [NÚM. SESSÕES]  
-**Data prevista de início:** [DATA DE INÍCIO]
-
-**Descrição do procedimento:**  
-[DESCRIÇÃO DO PROCEDIMENTO]
-
-*(Espaço para o profissional descrever, de forma clara e acessível ao paciente, em que consiste o procedimento, como será realizado, quais instrumentos e materiais serão utilizados e o tempo estimado.)*
-
-## 4. DIAGNÓSTICO E JUSTIFICATIVA DO TRATAMENTO
-
-Declaro ter sido informado(a) sobre o diagnóstico que justifica a realização do(s) procedimento(s) acima descrito(s):
-
-[DIAGNÓSTICO E JUSTIFICATIVA]
-
-*(Descrever o quadro clínico identificado, por exemplo: cárie, infecção, inflamação, fratura, necessidade estética etc.)*
-
-## 5. BENEFÍCIOS ESPERADOS
-
-Fui esclarecido(a) sobre os benefícios que se espera obter com o tratamento proposto:
-
-[BENEFÍCIOS ESPERADOS]
-
-## 6. RISCOS, INTERCORRÊNCIAS E POSSÍVEIS COMPLICAÇÕES
-
-Fui devidamente informado(a) de que todo procedimento odontológico está sujeito a riscos e possíveis intercorrências, independente da habilidade do profissional. Os riscos específicos deste tratamento incluem:
-
-[RISCOS ESPECÍFICOS]
-
-Adicionalmente, fui orientado(a) sobre riscos gerais que podem ocorrer em qualquer atendimento odontológico, incluindo, mas não se limitando a:
-
-- [ ] Reação alérgica ou hipersensibilidade a anestésicos, materiais ou medicamentos  
-- [ ] Sangramento durante ou após o procedimento  
-- [ ] Edema (inchaço), equimose (hematoma) ou desconforto na região tratada  
-- [ ] Infecção pós-operatória, mesmo com todas as medidas de controle adotadas  
-- [ ] Dor ou sensibilidade temporária após o procedimento  
-- [ ] Necessidade de procedimento complementar não previsto inicialmente  
-- [ ] Variação nos resultados em razão de fatores biológicos individuais  
-- [ ] Limitações anatômicas que possam interferir no resultado  
-- [ ] Outros: \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
-
-Estou ciente de que a Odontologia não é uma ciência exata e que os resultados podem variar em razão da resposta biológica do meu organismo, de minha colaboração com o tratamento e das limitações inerentes à ciência, conforme previsto pelo Conselho Federal de Odontologia (CFO).
-
-## 7. ALTERNATIVAS DE TRATAMENTO
-
-Fui informado(a) sobre as alternativas disponíveis para o meu caso, com as respectivas vantagens e desvantagens:
-
-[ALTERNATIVAS DE TRATAMENTO]
-
-Após ser esclarecido(a) sobre as opções disponíveis, optei pelo tratamento descrito na Seção 3, de forma livre e voluntária.
-
-## 8. ORIENTAÇÕES PRÉ E PÓS-OPERATÓRIAS
-
-**Cuidados antes do procedimento:**  
-[ORIENTAÇÕES PRÉ-OPERATÓRIAS]
-
-**Cuidados após o procedimento:**  
-[ORIENTAÇÕES PÓS-OPERATÓRIAS]
-
-Declaro ter recebido as orientações acima de forma clara e compreensível, comprometendo-me a segui-las rigorosamente. Estou ciente de que o não cumprimento das orientações pode comprometer o resultado do tratamento e que, neste caso, o(a) profissional não poderá ser responsabilizado(a) pelo insucesso decorrente.
-
-## 9. DECLARAÇÃO SOBRE HISTÓRICO DE SAÚDE
-
-Declaro que a ficha de anamnese foi preenchida com informações verdadeiras e completas, especialmente no que diz respeito a:
-
-- [ ] Doenças sistêmicas conhecidas (diabetes, hipertensão, cardiopatias, coagulopatias, etc.)  
-- [ ] Uso atual de medicamentos, incluindo anticoagulantes, bifosfonatos, imunossupressores e outros  
-- [ ] Alergias a medicamentos, anestésicos, látex ou materiais odontológicos  
-- [ ] Histórico de reações adversas a tratamentos odontológicos anteriores  
-- [ ] Gravidez ou suspeita de gravidez  
-- [ ] Histórico de tabagismo, etilismo ou uso de outras substâncias  
-- [ ] Tratamentos oncológicos em curso ou recentes  
-
-Compreendo que a omissão de informações relevantes sobre minha saúde pode interferir negativamente no planejamento do tratamento, na resposta biológica ao procedimento e na escolha de medicamentos e anestésicos, podendo ocasionar danos à minha saúde geral e bucal.
-
-## 10. RESPONSABILIDADE DO PROFISSIONAL
-
-Tenho ciência de que o(a) Cirurgião(ã)-Dentista assume responsabilidade de meio, comprometendo-se a empregar as melhores técnicas e materiais disponíveis, pautar-se pelo estado atual da ciência e zelar pela minha segurança e bem-estar durante todo o tratamento. Não se trata, portanto, de uma obrigação de resultado garantido.
-
-O(A) profissional responderá por insucessos decorrentes de comprovada falha técnica na execução dos serviços, nos termos do Código de Ética Odontológica e do Código de Defesa do Consumidor (Lei nº 8.078/1990).
-
-## 11. PROTEÇÃO DE DADOS PESSOAIS — LGPD
-
-Em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), declaro estar ciente de que meus dados pessoais e de saúde coletados neste documento serão utilizados exclusivamente para fins de execução do tratamento odontológico, sendo armazenados com segurança pelo período legalmente exigido, com total resguardo de minha privacidade e sigilo profissional.
-
-## 12. AUTORIZAÇÃO DE USO DE IMAGENS PARA FINS CIENTÍFICOS E EDUCACIONAIS
-*(Marque apenas uma opção)*
-
-- [ ] **AUTORIZO** o(a) profissional [NOME DO DENTISTA], CRO [CRO], a utilizar registros fotográficos, radiográficos, tomográficos, em vídeo ou qualquer outra documentação do meu tratamento odontológico para fins de: documentação clínica, publicações em periódicos científicos, congressos, cursos, aulas, livros, plataformas digitais e redes sociais de cunho profissional, sendo garantida a preservação de minha identidade em qualquer divulgação pública, em conformidade com a LGPD e as normas do CFO.
-
-- [ ] **NÃO AUTORIZO** a utilização das imagens e documentação do meu tratamento para finalidades além do prontuário clínico.
-
-## 13. DECLARAÇÃO FINAL DE CONSENTIMENTO
-
-Eu, **${patient?.full_name || '[NOME DO PACIENTE]'}**, declaro, de forma livre, voluntária e esclarecida, que:
-
-- [ ] Li (ou me foi lido) este Termo na íntegra e tive oportunidade de esclarecer todas as minhas dúvidas com o(a) profissional antes de assiná-lo;  
-- [ ] Compreendi em linguagem acessível as informações sobre o procedimento, seus benefícios, riscos, alternativas e cuidados necessários;  
-- [ ] Tive liberdade para fazer perguntas e recebi respostas satisfatórias;  
-- [ ] Sei que posso revogar este consentimento a qualquer momento, antes do início do procedimento, sem nenhum prejuízo ao meu atendimento;  
-- [ ] Concordo com a realização do(s) procedimento(s) descrito(s) neste Termo e autorizo o(a) profissional a executá-lo(s);  
-- [ ] Reconheço este documento como parte integrante do meu prontuário odontológico.
-
-**Local:** [CIDADE] / **Data:** [DATA]
-
-_____________________________________________  
-**${patient?.full_name || '[NOME DO PACIENTE]'}**  
-Assinatura do(a) Paciente
-
-_____________________________________________  
-[NOME DO DENTISTA] — CRO [CRO]  
-Assinatura do(a) Cirurgião(ã)-Dentista
-
-_____________________________________________  
-${patient?.responsible_name || '[NOME DO RESPONSÁVEL]'} — CPF: ${patient?.responsible_cpf || '[CPF]'} — Grau de parentesco: ${patient?.responsible_relationship || '[VÍNCULO]'}  
-Assinatura do(a) Responsável Legal (quando aplicável)
-      `),
+      title: 'Termo de Consentimento Livre e Esclarecido',
+      defaultPatientName: patient?.full_name || '',
+      defaultDocumento: patient?.cpf || '',
+      defaultResponsavel: patient?.responsible_name || '',
+      defaultNomeDentista: '',
+      defaultProcedimento: '',
+      defaultRiscos: '',
+      defaultAutorizaImagem: null,
+      defaultLocal: '',
+      defaultData: dayjs(),
       hasPatientSignature: true,
       hasProfessionalSignature: true
     },
