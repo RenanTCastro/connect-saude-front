@@ -67,8 +67,8 @@ function OdontogramGrid({
   onDeleteSurfaceAnnotation,
 }) {
   const [activeRegion, setActiveRegion] = useState(null);
-  const [showAberto, setShowAberto] = useState(true);
-  const [showFinalizado, setShowFinalizado] = useState(true);
+  const [showAberto, setShowAberto] = useState(false);
+  const [showFinalizado, setShowFinalizado] = useState(false);
   const [annotationModal, setAnnotationModal] = useState(null);
   const [surfaceModal, setSurfaceModal] = useState(null);
   const [regionModal, setRegionModal] = useState(null);
