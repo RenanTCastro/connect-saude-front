@@ -48,9 +48,12 @@ const FDI_DECIDUOUS = [
   ...Array.from({ length: 5 }, (_, i) => String(81 + i)),
 ];
 const REGIONS = [
-  { value: "Superior", label: "Superior" },
-  { value: "Inferior", label: "Inferior" },
-  { value: "Hemiarcada", label: "Hemiarcada" },
+  { value: "Maxila", label: "Maxila" },
+  { value: "Mandíbula", label: "Mandíbula" },
+  { value: "Face", label: "Face" },
+  { value: "Arcadas", label: "Arcadas" },
+  { value: "Arcada superior", label: "Arcada superior" },
+  { value: "Arcada inferior", label: "Arcada inferior" },
 ];
 
 const STATUS_OPTIONS = [
@@ -560,7 +563,7 @@ export default function TreatmentTab({ patientId }) {
                 ) : (
                   <Col xs={24} sm={12} md={6}>
                     <Form.Item name="region_name" label="Região" rules={[{ required: true }]}>
-                      <Select options={REGIONS} placeholder="Superior, Inferior, Hemiarcada" />
+                      <Select options={REGIONS} placeholder="Maxila, Mandíbula, Face, Arcadas..." />
                     </Form.Item>
                   </Col>
                 )
@@ -686,7 +689,7 @@ export default function TreatmentTab({ patientId }) {
               ) : (
                 <Col xs={24} sm={12} md={6}>
                   <Form.Item name="region_name" label="Região" rules={[{ required: true }]}>
-                    <Select options={REGIONS} placeholder="Superior, Inferior, Hemiarcada" />
+                    <Select options={REGIONS} placeholder="Maxila, Mandíbula, Face, Arcadas..." />
                   </Form.Item>
                 </Col>
               )
