@@ -51,7 +51,7 @@ const DENTITION_OPTIONS = [
   { value: "deciduous", label: "Decíduos" },
 ];
 
-export default function OdontogramGrid({
+function OdontogramGrid({
   inline = false,
   open: modalOpen,
   onCancel,
@@ -528,3 +528,5 @@ function AnnotationModal({ visible, onClose, fdi, annotation, treatments, onSave
     </Modal>
   );
 }
+
+export default React.memo(OdontogramGrid);

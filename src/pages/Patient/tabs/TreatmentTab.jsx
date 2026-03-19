@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Card,
   Typography,
@@ -81,8 +81,9 @@ export default function TreatmentTab({ patientId }) {
 
   const [treatments, setTreatments] = useState([]);
   const [loadingTreatments, setLoadingTreatments] = useState(false);
-  const [procedureOptions, setProcedureOptions] = useState([]);
-  const [procedureSearchLoading, setProcedureSearchLoading] = useState(false);
+  const [allProcedures, setAllProcedures] = useState([]);
+  const [loadingAllProcedures, setLoadingAllProcedures] = useState(false);
+  const [creatingProcedure, setCreatingProcedure] = useState(false);
   const [procedureSearchValue, setProcedureSearchValue] = useState("");
   const [selectedProcedure, setSelectedProcedure] = useState(null);
 
@@ -145,26 +146,40 @@ export default function TreatmentTab({ patientId }) {
     fetchEvolution();
   }, [fetchTreatments, fetchAnnotations, fetchEvolution]);
 
-  const onProcedureSearch = useCallback(async (value) => {
-    setProcedureSearchValue(value || "");
-    if (!value || value.trim().length < 2) {
-      setProcedureOptions([]);
-      return;
-    }
-    setProcedureSearchLoading(true);
+  const fetchAllProcedures = useCallback(async () => {
+    setLoadingAllProcedures(true);
     try {
-      const list = await searchProcedures(value.trim());
-      const options = (list || []).map((p) => ({
-        value: p.id,
-        label: p.tuss_code ? `${p.name} (${p.tuss_code})` : p.name,
-        procedure: p,
-      }));
-      setProcedureOptions(options);
+      const list = await searchProcedures("");
+      setAllProcedures(list || []);
     } catch (e) {
-      setProcedureOptions([]);
+      setAllProcedures([]);
+      messageApi.error("Erro ao carregar procedimentos.");
     } finally {
-      setProcedureSearchLoading(false);
+      setLoadingAllProcedures(false);
     }
+  }, [messageApi]);
+
+  useEffect(() => {
+    fetchAllProcedures();
+  }, [fetchAllProcedures]);
+
+  const procedureOptions = useMemo(() => {
+    const term = (procedureSearchValue ?? "").trim().toLowerCase();
+    if (term.length < 3) return [];
+    const list = allProcedures.filter(
+      (p) =>
+        (p.name && p.name.toLowerCase().includes(term)) ||
+        (p.tuss_code && p.tuss_code.toLowerCase().includes(term))
+    );
+    return list.map((p) => ({
+      value: p.id,
+      label: p.tuss_code ? `${p.name} (${p.tuss_code})` : p.name,
+      procedure: p,
+    }));
+  }, [allProcedures, procedureSearchValue]);
+
+  const onProcedureSearch = useCallback((value) => {
+    setProcedureSearchValue(value ?? "");
   }, []);
 
   const onProcedureSelect = (value, option) => {
@@ -181,26 +196,30 @@ export default function TreatmentTab({ patientId }) {
       messageApi.warning("Digite o nome do procedimento.");
       return;
     }
-    setProcedureSearchLoading(true);
+    setCreatingProcedure(true);
     try {
       const created = await createProcedure({ name, is_custom: true });
+      setAllProcedures((prev) => [...prev, created]);
       setSelectedProcedure(created);
       setProcedureSearchValue(created.name);
-      setProcedureOptions([{ value: created.id, label: created.name, procedure: created }]);
       messageApi.success("Procedimento personalizado criado.");
     } catch (e) {
       messageApi.error("Erro ao criar procedimento.");
     } finally {
-      setProcedureSearchLoading(false);
+      setCreatingProcedure(false);
     }
   };
 
-  const procedureAutocompleteOptions = [
-    ...procedureOptions,
-    ...(procedureSearchValue?.trim() && procedureOptions.every((o) => o.procedure?.name?.toLowerCase() !== procedureSearchValue.trim().toLowerCase())
-      ? [{ value: "__create__", label: `Criar procedimento personalizado: "${procedureSearchValue.trim()}"` }]
-      : []),
-  ];
+  const procedureAutocompleteOptions = useMemo(() => {
+    const trimmed = procedureSearchValue?.trim() || "";
+    const showCreate =
+      trimmed.length >= 3 &&
+      procedureOptions.every((o) => o.procedure?.name?.toLowerCase() !== trimmed.toLowerCase());
+    return [
+      ...procedureOptions.map((o) => ({ value: String(o.value), label: o.label })),
+      ...(showCreate ? [{ value: "__create__", label: `Criar procedimento personalizado: "${trimmed}"` }] : []),
+    ];
+  }, [procedureOptions, procedureSearchValue]);
 
   const onTreatmentFinish = async (values) => {
     if (!patientId) return;
@@ -531,10 +550,7 @@ export default function TreatmentTab({ patientId }) {
                 <Space.Compact style={{ width: "100%" }}>
                   <AutoComplete
                     value={procedureSearchValue}
-                    options={procedureAutocompleteOptions.map((o) => ({
-                      value: o.value === "__create__" ? "__create__" : String(o.value),
-                      label: o.label,
-                    }))}
+                    options={procedureAutocompleteOptions}
                     onSearch={onProcedureSearch}
                     onSelect={(v) => {
                       if (v === "__create__") {
@@ -544,13 +560,14 @@ export default function TreatmentTab({ patientId }) {
                       const opt = procedureOptions.find((o) => String(o.value) === v);
                       if (opt?.procedure) setSelectedProcedure(opt.procedure);
                     }}
-                    placeholder="Buscar por nome ou código TUSS"
+                    placeholder="Buscar por nome ou código TUSS (mín. 3 caracteres)"
                     style={{ flex: 1 }}
                     maxLength={100}
-                    notFoundContent={procedureSearchLoading ? "Buscando..." : null}
+                    filterOption={false}
+                    notFoundContent={loadingAllProcedures ? "Carregando..." : null}
                   />
                   {procedureSearchValue?.trim() && (
-                    <Button type="default" onClick={handleCreateCustomProcedure} loading={procedureSearchLoading}>
+                    <Button type="default" onClick={handleCreateCustomProcedure} loading={creatingProcedure}>
                       Criar personalizado
                     </Button>
                   )}
