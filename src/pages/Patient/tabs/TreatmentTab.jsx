@@ -511,8 +511,17 @@ export default function TreatmentTab({ patientId }) {
               }
             </Form.Item>
             <Col xs={24} sm={12} md={6}>
-              <Form.Item name="value" label="Valor (R$)">
-                <InputNumber min={0} step={0.01} style={{ width: "100%" }} placeholder="0,00" />
+              <Form.Item name="value" label="Valor">
+                <InputNumber
+                  min={0}
+                  max={999999.99}
+                  step={0.01}
+                  style={{ width: "100%" }}
+                  prefix="R$"
+                  placeholder="0,00"
+                  decimalSeparator=","
+                  thousandSeparator="."
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -537,6 +546,7 @@ export default function TreatmentTab({ patientId }) {
                     }}
                     placeholder="Buscar por nome ou código TUSS"
                     style={{ flex: 1 }}
+                    maxLength={100}
                     notFoundContent={procedureSearchLoading ? "Buscando..." : null}
                   />
                   {procedureSearchValue?.trim() && (
