@@ -12,20 +12,10 @@ import {
   AutoComplete,
   Space,
   Tag,
-  DatePicker,
-  Upload,
-  Modal,
   Row,
   Col,
 } from "antd";
-import {
-  PlusOutlined,
-  FolderOpenOutlined,
-  InboxOutlined,
-  DownloadOutlined,
-  FileOutlined,
-} from "@ant-design/icons";
-import dayjs from "dayjs";
+import { PlusOutlined } from "@ant-design/icons";
 import {
   searchProcedures,
   createProcedure,
@@ -36,16 +26,10 @@ import {
   createOdontogramAnnotation,
   updateOdontogramAnnotation,
   deleteOdontogramAnnotation,
-  getEvolutionFolder,
-  getEvolutionEntries,
-  createEvolutionEntry,
-  deleteEvolutionEntry,
 } from "../../../services/treatmentService";
 import OdontogramGrid from "../../../components/OdontogramGrid/OdontogramGrid";
-import { requestUploadUrl, confirmUpload, getAttachments, getDownloadUrl } from "../../../services/attachmentService";
 
 const { Title, Text } = Typography;
-const { TextArea } = Input;
 const { Option } = Select;
 
 // FDI: permanente 11-18, 21-28, 31-38, 41-48; decíduo 51-55, 61-65, 71-75, 81-85
@@ -76,7 +60,6 @@ const STATUS_OPTIONS = [
 
 export default function TreatmentTab({ patientId }) {
   const [treatmentForm] = Form.useForm();
-  const [evolutionForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
 
   const [treatments, setTreatments] = useState([]);
@@ -90,16 +73,6 @@ export default function TreatmentTab({ patientId }) {
   const [annotations, setAnnotations] = useState([]);
   const [loadingAnnotations, setLoadingAnnotations] = useState(false);
   const [dentition, setDentition] = useState("permanent");
-
-  const [evolutionEntries, setEvolutionEntries] = useState([]);
-  const [loadingEvolution, setLoadingEvolution] = useState(false);
-  const [evolutionFolderId, setEvolutionFolderId] = useState(null);
-  const [evolutionFile, setEvolutionFile] = useState(null);
-  const [submittingEvolution, setSubmittingEvolution] = useState(false);
-  const [isEvolutionModalOpen, setIsEvolutionModalOpen] = useState(false);
-  const [evolutionViewEntry, setEvolutionViewEntry] = useState(null);
-  const [evolutionViewAttachments, setEvolutionViewAttachments] = useState([]);
-  const [loadingEvolutionView, setLoadingEvolutionView] = useState(false);
 
   const fetchTreatments = useCallback(async () => {
     if (!patientId) return;
@@ -127,24 +100,10 @@ export default function TreatmentTab({ patientId }) {
     }
   }, [patientId, messageApi]);
 
-  const fetchEvolution = useCallback(async () => {
-    if (!patientId) return;
-    setLoadingEvolution(true);
-    try {
-      const data = await getEvolutionEntries(patientId);
-      setEvolutionEntries(data);
-    } catch (e) {
-      messageApi.error("Erro ao carregar evolução.");
-    } finally {
-      setLoadingEvolution(false);
-    }
-  }, [patientId, messageApi]);
-
   useEffect(() => {
     fetchTreatments();
     fetchAnnotations();
-    fetchEvolution();
-  }, [fetchTreatments, fetchAnnotations, fetchEvolution]);
+  }, [fetchTreatments, fetchAnnotations]);
 
   const fetchAllProcedures = useCallback(async () => {
     setLoadingAllProcedures(true);
@@ -384,99 +343,6 @@ export default function TreatmentTab({ patientId }) {
     }
   };
 
-  const onEvolutionFolderRequest = async () => {
-    if (!patientId) return;
-    try {
-      const folder = await getEvolutionFolder(patientId);
-      setEvolutionFolderId(folder.id);
-      return folder.id;
-    } catch (e) {
-      messageApi.error("Erro ao obter pasta de evolução.");
-      return null;
-    }
-  };
-
-  const onEvolutionFinish = async (values) => {
-    if (!patientId) return;
-    setSubmittingEvolution(true);
-    try {
-      let folderId = evolutionFolderId;
-      if (evolutionFile && !folderId) {
-        folderId = await onEvolutionFolderRequest();
-        if (folderId) {
-          const { uploadUrl, fileId, s3Key, fileType } = await requestUploadUrl(patientId, evolutionFile, folderId);
-          await fetch(uploadUrl, {
-            method: "PUT",
-            body: evolutionFile,
-            headers: { "Content-Type": evolutionFile.type || "application/octet-stream" },
-          });
-          await confirmUpload(patientId, {
-            fileId,
-            s3Key,
-            fileName: evolutionFile.name,
-            fileType,
-            fileSize: evolutionFile.size,
-            folderId,
-            mimeType: evolutionFile.type,
-          });
-        }
-      }
-      await createEvolutionEntry(patientId, {
-        content: values.content || null,
-        occurred_at: values.occurred_at ? dayjs(values.occurred_at).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD"),
-        folder_id: folderId || null,
-      });
-      messageApi.success("Evolução registrada.");
-      evolutionForm.resetFields();
-      setEvolutionFolderId(null);
-      setEvolutionFile(null);
-      setIsEvolutionModalOpen(false);
-      fetchEvolution();
-    } catch (e) {
-      messageApi.error(e.response?.data?.error || "Erro ao salvar evolução.");
-    } finally {
-      setSubmittingEvolution(false);
-    }
-  };
-
-  const handleDeleteEvolution = async (id) => {
-    try {
-      await deleteEvolutionEntry(id);
-      messageApi.success("Entrada removida.");
-      fetchEvolution();
-    } catch (e) {
-      messageApi.error("Erro ao remover.");
-    }
-  };
-
-  const openEvolutionView = useCallback(
-    async (entry) => {
-      setEvolutionViewEntry(entry);
-      setEvolutionViewAttachments([]);
-      if (entry?.folder_id && patientId) {
-        setLoadingEvolutionView(true);
-        try {
-          const data = await getAttachments(patientId, entry.folder_id);
-          setEvolutionViewAttachments(data.attachments || []);
-        } catch (e) {
-          messageApi.error("Erro ao carregar anexos.");
-        } finally {
-          setLoadingEvolutionView(false);
-        }
-      }
-    },
-    [patientId, messageApi]
-  );
-
-  const handleOpenAttachment = async (attachmentId) => {
-    try {
-      const { downloadUrl } = await getDownloadUrl(attachmentId);
-      window.open(downloadUrl, "_blank");
-    } catch (e) {
-      messageApi.error("Erro ao abrir anexo.");
-    }
-  };
-
   return (
     <div style={{ padding: "0 0 24px 0", display: "flex", flexDirection: "column", gap: 24 }}>
       {contextHolder}
@@ -545,47 +411,47 @@ export default function TreatmentTab({ patientId }) {
             </Col>
           </Row>
           <Row gutter={16}>
-            <Col xs={24} md={18}>
-              <Form.Item label="Procedimento" required>
-                <Space.Compact style={{ width: "100%" }}>
-                  <AutoComplete
-                    value={procedureSearchValue}
-                    options={procedureAutocompleteOptions}
-                    onSearch={onProcedureSearch}
-                    onSelect={(v) => {
-                      if (v === "__create__") {
-                        handleCreateCustomProcedure();
-                        return;
-                      }
-                      const opt = procedureOptions.find((o) => String(o.value) === v);
-                      if (opt?.procedure) setSelectedProcedure(opt.procedure);
-                    }}
-                    placeholder="Buscar por nome ou código TUSS (mín. 3 caracteres)"
-                    style={{ flex: 1 }}
-                    maxLength={100}
-                    filterOption={false}
-                    notFoundContent={loadingAllProcedures ? "Carregando..." : null}
-                  />
-                  {procedureSearchValue?.trim() && (
-                    <Button type="default" onClick={handleCreateCustomProcedure} loading={creatingProcedure}>
-                      Criar personalizado
-                    </Button>
+            <Col xs={24}>
+              <div style={{ display: "flex", gap: 16, width: "100%", alignItems: "flex-end", flexWrap: "wrap" }}>
+                <Form.Item label="Procedimento" required style={{ flex: "1 1 200px", marginBottom: 0, minWidth: 0 }}>
+                  <Space.Compact style={{ width: "100%" }}>
+                    <AutoComplete
+                      value={procedureSearchValue}
+                      options={procedureAutocompleteOptions}
+                      onSearch={onProcedureSearch}
+                      onSelect={(v) => {
+                        if (v === "__create__") {
+                          handleCreateCustomProcedure();
+                          return;
+                        }
+                        const opt = procedureOptions.find((o) => String(o.value) === v);
+                        if (opt?.procedure) setSelectedProcedure(opt.procedure);
+                      }}
+                      placeholder="Buscar por nome ou código TUSS (mín. 3 caracteres)"
+                      style={{ width: "100%" }}
+                      maxLength={100}
+                      filterOption={false}
+                      notFoundContent={loadingAllProcedures ? "Carregando..." : null}
+                    />
+                    {procedureSearchValue?.trim() && (
+                      <Button type="default" onClick={handleCreateCustomProcedure} loading={creatingProcedure}>
+                        + Criar 
+                      </Button>
+                    )}
+                  </Space.Compact>
+                  {selectedProcedure && (
+                    <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 4 }}>
+                      Selecionado: {selectedProcedure.name}
+                      {selectedProcedure.tuss_code ? ` (${selectedProcedure.tuss_code})` : ""}
+                    </Text>
                   )}
-                </Space.Compact>
-                {selectedProcedure && (
-                  <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 4 }}>
-                    Selecionado: {selectedProcedure.name}
-                    {selectedProcedure.tuss_code ? ` (${selectedProcedure.tuss_code})` : ""}
-                  </Text>
-                )}
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item label=" " colon={false}>
-                <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
-                  Adicionar tratamento
-                </Button>
-              </Form.Item>
+                </Form.Item>
+                <Form.Item label=" " colon={false} style={{ marginBottom: 0 }}>
+                  <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
+                    Adicionar tratamento
+                  </Button>
+                </Form.Item>
+              </div>
             </Col>
           </Row>
         </Form>
@@ -618,159 +484,6 @@ export default function TreatmentTab({ patientId }) {
           onDeleteSurfaceAnnotation={handleDeleteOdontogramAnnotation}
         />
       </Card>
-
-      <Card
-        size="small"
-        title="Evolução do paciente"
-        extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              evolutionForm.setFieldsValue({ occurred_at: dayjs() });
-              setEvolutionFile(null);
-              setIsEvolutionModalOpen(true);
-            }}
-          >
-            Nova evolução
-          </Button>
-        }
-      >
-        <Space direction="vertical" style={{ width: "100%" }}>
-          {evolutionEntries.map((entry) => (
-            <Card
-              key={entry.id}
-              size="small"
-              style={{ textAlign: "left", cursor: "pointer" }}
-              onClick={() => openEvolutionView(entry)}
-            >
-              <Text type="secondary">{dayjs(entry.occurred_at).format("DD/MM/YYYY")}</Text>
-              <div style={{ marginTop: 4 }}>{entry.content ? `${entry.content.slice(0, 80)}${entry.content.length > 80 ? "…" : ""}` : "—"}</div>
-              {entry.folder_id ? (
-                <Space style={{ marginTop: 8 }}>
-                  <FolderOpenOutlined />
-                  <Text type="secondary">Anexo na aba Anexos (pasta vinculada).</Text>
-                </Space>
-              ) : null}
-              <div style={{ marginTop: 8 }} onClick={(e) => e.stopPropagation()}>
-                <Button type="link" danger size="small" onClick={() => handleDeleteEvolution(entry.id)}>
-                  Remover
-                </Button>
-              </div>
-            </Card>
-          ))}
-        </Space>
-      </Card>
-
-      <Modal
-        title="Evolução"
-        open={!!evolutionViewEntry}
-        onCancel={() => setEvolutionViewEntry(null)}
-        footer={null}
-        width={560}
-        destroyOnClose
-      >
-        {evolutionViewEntry && (
-          <Space direction="vertical" style={{ width: "100%" }} size="middle">
-            <div>
-              <Text type="secondary">Data</Text>
-              <div>{dayjs(evolutionViewEntry.occurred_at).format("DD/MM/YYYY")}</div>
-            </div>
-            <div>
-              <Text type="secondary">Descrição</Text>
-              <div style={{ marginTop: 4, whiteSpace: "pre-wrap" }}>
-                {evolutionViewEntry.content || "—"}
-              </div>
-            </div>
-            {evolutionViewEntry.folder_id && (
-              <div>
-                <Text type="secondary">Anexos</Text>
-                {loadingEvolutionView ? (
-                  <div style={{ marginTop: 8 }}>Carregando anexos...</div>
-                ) : evolutionViewAttachments.length === 0 ? (
-                  <div style={{ marginTop: 8 }}>Nenhum anexo nesta pasta (pode ter sido removido na aba Anexos).</div>
-                ) : (
-                  <Space direction="vertical" style={{ width: "100%", marginTop: 8 }}>
-                    {evolutionViewAttachments.map((att) => (
-                      <div key={att.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <FileOutlined />
-                        <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis" }}>{att.file_name}</span>
-                        <Button
-                          type="link"
-                          size="small"
-                          icon={<DownloadOutlined />}
-                          onClick={() => handleOpenAttachment(att.id)}
-                        >
-                          Abrir
-                        </Button>
-                      </div>
-                    ))}
-                  </Space>
-                )}
-              </div>
-            )}
-          </Space>
-        )}
-      </Modal>
-
-      <Modal
-        title="Nova evolução"
-        open={isEvolutionModalOpen}
-        onCancel={() => {
-          setIsEvolutionModalOpen(false);
-          evolutionForm.resetFields();
-          setEvolutionFile(null);
-          setEvolutionFolderId(null);
-        }}
-        footer={null}
-        width={520}
-        destroyOnClose
-      >
-        <Form
-          form={evolutionForm}
-          layout="vertical"
-          onFinish={onEvolutionFinish}
-          initialValues={{ occurred_at: dayjs() }}
-        >
-          <Form.Item name="content" label="Texto da evolução">
-            <TextArea rows={4} placeholder="Registre a evolução do tratamento..." />
-          </Form.Item>
-          <Form.Item name="occurred_at" label="Data" rules={[{ required: true, message: "Informe a data." }]}>
-            <DatePicker style={{ width: "100%" }} />
-          </Form.Item>
-          <Form.Item label="Anexo (será salvo em pasta na aba Anexos)">
-            <Upload.Dragger
-              maxCount={1}
-              beforeUpload={(file) => {
-                setEvolutionFile(file);
-                return false;
-              }}
-              onRemove={() => setEvolutionFile(null)}
-              fileList={evolutionFile ? [{ uid: "-1", name: evolutionFile.name }] : []}
-            >
-              <p className="ant-upload-drag-icon"><InboxOutlined /></p>
-              <p className="ant-upload-text">Clique ou arraste arquivo (pasta tratamento/tratamento_1 em Anexos)</p>
-            </Upload.Dragger>
-          </Form.Item>
-          <Form.Item style={{ marginBottom: 0 }}>
-            <Space>
-              <Button type="primary" htmlType="submit" loading={submittingEvolution}>
-                Salvar evolução
-              </Button>
-              <Button
-                onClick={() => {
-                  setIsEvolutionModalOpen(false);
-                  evolutionForm.resetFields();
-                  setEvolutionFile(null);
-                  setEvolutionFolderId(null);
-                }}
-              >
-                Cancelar
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
     </div>
   );
 }

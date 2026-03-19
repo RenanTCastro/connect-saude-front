@@ -58,6 +58,14 @@
   margin-bottom: 16px;
 }
 
+/* No modo inline (aba Tratamento), permitir rolagem horizontal
+   quando a grade exceder a largura do container no mobile. */
+.odontogram-inline .odontogram-grid {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
 .odontogram-quadrant {
   display: flex;
   align-items: center;

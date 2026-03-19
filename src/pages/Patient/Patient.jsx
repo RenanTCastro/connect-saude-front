@@ -171,7 +171,7 @@ export default function PatientDetails() {
           {
             key: "info",
             label: "Informações",
-            children: <InfoTab patient={patient} appointments={appointments} />,
+            children: <InfoTab patient={patient} patientId={id} appointments={appointments} />,
           },
           {
             key: "form",
