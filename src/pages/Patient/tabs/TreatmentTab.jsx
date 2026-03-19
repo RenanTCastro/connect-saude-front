@@ -412,7 +412,7 @@ export default function TreatmentTab({ patientId }) {
           </Row>
           <Row gutter={16}>
             <Col xs={24}>
-              <div style={{ display: "flex", gap: 16, width: "100%", alignItems: "flex-end", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 16, width: "100%", alignItems: "flex-start", flexWrap: "wrap" }}>
                 <Form.Item label="Procedimento" required style={{ flex: "1 1 200px", marginBottom: 0, minWidth: 0 }}>
                   <Space.Compact style={{ width: "100%" }}>
                     <AutoComplete
