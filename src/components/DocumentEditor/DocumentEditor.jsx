@@ -4,6 +4,7 @@ import {
   Modal,
   Form,
   Input,
+  InputNumber,
   Checkbox,
   Button,
   Space,
@@ -12,6 +13,7 @@ import {
   AutoComplete,
   Tag,
   DatePicker,
+  TimePicker,
 } from "antd";
 import {
   EyeOutlined,
@@ -92,11 +94,16 @@ export default function DocumentEditor({
   // Atestado
   const [certificatePatientName, setCertificatePatientName] = useState("");
   const [certificateCpf, setCertificateCpf] = useState("");
-  const [certificatePeriodoAte, setCertificatePeriodoAte] = useState(dayjs());
-  const [certificateDiagnosticos, setCertificateDiagnosticos] = useState("");
-  const [certificateRecomendacoes, setCertificateRecomendacoes] = useState("");
-  const [certificateLocal, setCertificateLocal] = useState("");
+  const [certificateEndereco, setCertificateEndereco] = useState("");
+  const [certificateHoraInicio, setCertificateHoraInicio] = useState(
+    () => dayjs().set("hour", 8).set("minute", 0).set("second", 0)
+  );
+  const [certificateHoraFim, setCertificateHoraFim] = useState(
+    () => dayjs().set("hour", 9).set("minute", 0).set("second", 0)
+  );
   const [certificateData, setCertificateData] = useState(dayjs());
+  const [certificateDiasRepouso, setCertificateDiasRepouso] = useState(null);
+  const [certificateLocal, setCertificateLocal] = useState("");
 
   const isPrescription = documentType === DOCUMENT_TYPES.PRESCRIPTION;
   const isCertificate = documentType === DOCUMENT_TYPES.CERTIFICATE;
@@ -212,11 +219,18 @@ export default function DocumentEditor({
       if (isCertificate) {
         setCertificatePatientName(template.defaultPatientName ?? "");
         setCertificateCpf(template.defaultCpf ?? "");
-        setCertificatePeriodoAte(template.defaultPeriodoAte ?? dayjs());
-        setCertificateDiagnosticos(template.defaultDiagnosticos ?? "");
-        setCertificateRecomendacoes(template.defaultRecomendacoes ?? "");
-        setCertificateLocal(template.defaultLocal ?? "");
+        setCertificateEndereco(template.defaultEndereco ?? "");
+        setCertificateHoraInicio(
+          template.defaultHoraInicio ??
+            dayjs().set("hour", 8).set("minute", 0).set("second", 0)
+        );
+        setCertificateHoraFim(
+          template.defaultHoraFim ??
+            dayjs().set("hour", 9).set("minute", 0).set("second", 0)
+        );
         setCertificateData(template.defaultData ?? dayjs());
+        setCertificateDiasRepouso(template.defaultDiasRepouso ?? null);
+        setCertificateLocal(template.defaultLocal ?? "");
       }
 
       if (!isStructuredForm) {
@@ -264,11 +278,16 @@ export default function DocumentEditor({
     setOrientacoesText("");
     setCertificatePatientName("");
     setCertificateCpf("");
-    setCertificatePeriodoAte(dayjs());
-    setCertificateDiagnosticos("");
-    setCertificateRecomendacoes("");
-    setCertificateLocal("");
+    setCertificateEndereco("");
+    setCertificateHoraInicio(
+      dayjs().set("hour", 8).set("minute", 0).set("second", 0)
+    );
+    setCertificateHoraFim(
+      dayjs().set("hour", 9).set("minute", 0).set("second", 0)
+    );
     setCertificateData(dayjs());
+    setCertificateDiasRepouso(null);
+    setCertificateLocal("");
     onClose();
   };
 
@@ -306,23 +325,37 @@ export default function DocumentEditor({
     }
 
     if (isCertificate) {
-      const patientName = certificatePatientName || patient?.full_name || "[NOME DO PACIENTE]";
+      const patientName =
+        certificatePatientName || patient?.full_name || "[NOME]";
       const cpf = certificateCpf || patient?.cpf || "[CPF]";
-      const periodoStr = certificatePeriodoAte?.isValid?.()
-        ? certificatePeriodoAte.format("DD/MM/YYYY")
-        : dayjs().format("DD/MM/YYYY");
+      const endereco = certificateEndereco || (patient?.street
+        ? [patient.street, patient.complement, patient.neighborhood, patient.city, patient.state]
+            .filter(Boolean)
+            .join(", ")
+        : "[ENDEREÇO]");
+      const horaInicio = certificateHoraInicio?.isValid?.()
+        ? certificateHoraInicio.format("HH:mm")
+        : "08:00";
+      const horaFim = certificateHoraFim?.isValid?.()
+        ? certificateHoraFim.format("HH:mm")
+        : "09:00";
       const dataStr = certificateData?.isValid?.()
         ? certificateData.format("DD/MM/YYYY")
         : dayjs().format("DD/MM/YYYY");
       const local = certificateLocal || "";
-      const diag = certificateDiagnosticos || "";
-      const rec = certificateRecomendacoes || "";
+      const diasRepouso = certificateDiasRepouso;
 
-      let body = `<p>Atesto para os devidos fins que o(a) paciente <strong>${escapeHtml(patientName)}</strong>, CPF ${escapeHtml(cpf)}, esteve sob meus cuidados no período até ${periodoStr}.</p>`;
-      body += `<p><strong>DIAGNÓSTICO:</strong></p>${diag ? textToHtmlParagraphs(diag) : "<p></p>"}`;
-      body += `<p><strong>RECOMENDAÇÕES:</strong></p>${rec ? textToHtmlParagraphs(rec) : "<p></p>"}`;
-      body += `<p>Este atestado é válido para os fins a que se destina.</p>`;
-      body += `<p><strong>Local e data:</strong> ${escapeHtml(local)}${local ? ", " : ""}${dataStr}</p>`;
+      let texto = `Atesto, para os devidos fins, que o(a) Sr(a). ${escapeHtml(patientName)}, portador(a) do CPF ${escapeHtml(cpf)}, residente à ${escapeHtml(endereco)}, esteve sob meus cuidados profissionais no período das ${horaInicio} às ${horaFim} do dia ${dataStr}`;
+      if (diasRepouso != null && diasRepouso > 0) {
+        texto += `, necessitando de ${diasRepouso} dias de repouso, a partir desta data`;
+      }
+      texto += ".";
+
+      let body = `<p>${texto}</p>`;
+      const localDataStr = local
+        ? `${escapeHtml(local)}, ${dataStr}`
+        : dataStr;
+      body += `<p><strong>${escapeHtml(localDataStr)}</strong></p>`;
       return body;
     }
 
@@ -336,11 +369,12 @@ export default function DocumentEditor({
     orientacoesText,
     certificatePatientName,
     certificateCpf,
-    certificatePeriodoAte,
-    certificateDiagnosticos,
-    certificateRecomendacoes,
-    certificateLocal,
+    certificateEndereco,
+    certificateHoraInicio,
+    certificateHoraFim,
     certificateData,
+    certificateDiasRepouso,
+    certificateLocal,
     documentBody,
   ]);
 
@@ -458,11 +492,11 @@ export default function DocumentEditor({
 
   const renderCertificateForm = () => (
     <>
-      <Form.Item label="Paciente">
+      <Form.Item label="Nome do paciente">
         <Input
           value={certificatePatientName}
           onChange={(e) => setCertificatePatientName(e.target.value)}
-          placeholder="Nome do paciente"
+          placeholder="Nome completo"
         />
       </Form.Item>
 
@@ -474,34 +508,44 @@ export default function DocumentEditor({
         />
       </Form.Item>
 
-      <Form.Item label="Período até">
-        <DatePicker
-          value={certificatePeriodoAte}
-          onChange={(d) => setCertificatePeriodoAte(d || dayjs())}
-          format="DD/MM/YYYY"
-          style={{ width: "100%" }}
+      <Form.Item label="Endereço">
+        <Input
+          value={certificateEndereco}
+          onChange={(e) => setCertificateEndereco(e.target.value)}
+          placeholder="Endereço completo (rua, número, bairro, cidade)"
         />
       </Form.Item>
 
-      <Form.Item label="Diagnósticos">
-        <TextArea
-          value={certificateDiagnosticos}
-          onChange={(e) => setCertificateDiagnosticos(e.target.value)}
-          placeholder="Descreva o(s) diagnóstico(s)"
-          rows={4}
-          maxLength={TEXTAREA_MAX_LENGTH}
-          showCount
-        />
+      <Form.Item label="Período">
+        <Space.Compact style={{ width: "100%" }}>
+          <TimePicker
+            value={certificateHoraInicio}
+            onChange={(t) => setCertificateHoraInicio(t || dayjs().set("hour", 8).set("minute", 0))}
+            format="HH:mm"
+            placeholder="Hora início"
+            style={{ flex: 1 }}
+          />
+          <TimePicker
+            value={certificateHoraFim}
+            onChange={(t) => setCertificateHoraFim(t || dayjs().set("hour", 9).set("minute", 0))}
+            format="HH:mm"
+            placeholder="Hora fim"
+            style={{ flex: 1 }}
+          />
+        </Space.Compact>
       </Form.Item>
 
-      <Form.Item label="Recomendações">
-        <TextArea
-          value={certificateRecomendacoes}
-          onChange={(e) => setCertificateRecomendacoes(e.target.value)}
-          placeholder="Descreva as recomendações"
-          rows={4}
-          maxLength={TEXTAREA_MAX_LENGTH}
-          showCount
+      <Form.Item
+        label="Dias de repouso"
+        extra="Opcional. Se preenchido, inclui necessidade de repouso no atestado."
+      >
+        <InputNumber
+          value={certificateDiasRepouso}
+          onChange={setCertificateDiasRepouso}
+          placeholder="Ex: 3"
+          min={1}
+          max={365}
+          style={{ width: 120 }}
         />
       </Form.Item>
 
@@ -517,6 +561,7 @@ export default function DocumentEditor({
             value={certificateData}
             onChange={(d) => setCertificateData(d || dayjs())}
             format="DD/MM/YYYY"
+            placeholder="Data"
           />
         </Space.Compact>
       </Form.Item>

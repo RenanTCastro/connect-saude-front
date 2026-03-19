@@ -336,14 +336,19 @@ Assinatura do(a) Responsável Legal (quando aplicável)
     },
 
     [DOCUMENT_TYPES.CERTIFICATE]: {
-      title: 'Atestado Médico',
+      title: 'ATESTADO',
       defaultPatientName: patient?.full_name || '',
       defaultCpf: patient?.cpf || '',
-      defaultPeriodoAte: dayjs(),
-      defaultDiagnosticos: '',
-      defaultRecomendacoes: '',
-      defaultLocal: '',
+      defaultEndereco: patient?.street
+        ? [patient.street, patient.complement, patient.neighborhood, patient.city, patient.state]
+            .filter(Boolean)
+            .join(', ')
+        : '',
+      defaultHoraInicio: dayjs().set('hour', 8).set('minute', 0).set('second', 0),
+      defaultHoraFim: dayjs().set('hour', 9).set('minute', 0).set('second', 0),
       defaultData: dayjs(),
+      defaultDiasRepouso: null,
+      defaultLocal: '',
       hasPatientSignature: false,
       hasProfessionalSignature: true
     },
