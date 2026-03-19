@@ -28,6 +28,11 @@ export const updateTreatment = async (treatmentId, data) => {
   return response.data;
 };
 
+export const deleteTreatment = async (treatmentId) => {
+  const response = await api.delete(`/treatments/${treatmentId}`);
+  return response.data;
+};
+
 // --- Anotações do odontograma ---
 export const getOdontogramAnnotations = async (patientId) => {
   const response = await api.get(`/patients/${patientId}/odontogram-annotations`);

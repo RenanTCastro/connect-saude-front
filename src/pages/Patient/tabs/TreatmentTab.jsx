@@ -7,6 +7,7 @@ import {
   Select,
   InputNumber,
   Button,
+  Modal,
   message,
   Table,
   AutoComplete,
@@ -22,6 +23,7 @@ import {
   getTreatments,
   createTreatment,
   updateTreatment,
+  deleteTreatment,
   getOdontogramAnnotations,
   createOdontogramAnnotation,
   updateOdontogramAnnotation,
@@ -69,6 +71,19 @@ export default function TreatmentTab({ patientId }) {
   const [creatingProcedure, setCreatingProcedure] = useState(false);
   const [procedureSearchValue, setProcedureSearchValue] = useState("");
   const [selectedProcedure, setSelectedProcedure] = useState(null);
+
+  // --- Exclusão de tratamento (modal) ---
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletingTreatmentId, setDeletingTreatmentId] = useState(null);
+  const [deletingTreatment, setDeletingTreatment] = useState(false);
+
+  // --- Edição de tratamento (modal) ---
+  const [editForm] = Form.useForm();
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingTreatment, setEditingTreatment] = useState(null);
+  const [editProcedureSearchValue, setEditProcedureSearchValue] = useState("");
+  const [editSelectedProcedure, setEditSelectedProcedure] = useState(null);
+  const [creatingEditProcedure, setCreatingEditProcedure] = useState(false);
 
   const [annotations, setAnnotations] = useState([]);
   const [loadingAnnotations, setLoadingAnnotations] = useState(false);
@@ -180,6 +195,55 @@ export default function TreatmentTab({ patientId }) {
     ];
   }, [procedureOptions, procedureSearchValue]);
 
+  // Autocomplete para procedimento no modal de edição
+  const editProcedureOptions = useMemo(() => {
+    const term = (editProcedureSearchValue ?? "").trim().toLowerCase();
+    if (term.length < 3) return [];
+    const list = allProcedures.filter(
+      (p) =>
+        (p.name && p.name.toLowerCase().includes(term)) ||
+        (p.tuss_code && p.tuss_code.toLowerCase().includes(term))
+    );
+    return list.map((p) => ({
+      value: p.id,
+      label: p.tuss_code ? `${p.name} (${p.tuss_code})` : p.name,
+      procedure: p,
+    }));
+  }, [allProcedures, editProcedureSearchValue]);
+
+  const editProcedureAutocompleteOptions = useMemo(() => {
+    const trimmed = editProcedureSearchValue?.trim() || "";
+    const showCreate =
+      trimmed.length >= 3 &&
+      editProcedureOptions.every((o) => o.procedure?.name?.toLowerCase() !== trimmed.toLowerCase());
+    return [
+      ...editProcedureOptions.map((o) => ({ value: String(o.value), label: o.label })),
+      ...(showCreate
+        ? [{ value: "__create__", label: `Criar procedimento personalizado: "${trimmed}"` }]
+        : []),
+    ];
+  }, [editProcedureOptions, editProcedureSearchValue]);
+
+  const handleCreateCustomProcedureForEdit = async () => {
+    const name = editProcedureSearchValue?.trim();
+    if (!name) {
+      messageApi.warning("Digite o nome do procedimento.");
+      return;
+    }
+    setCreatingEditProcedure(true);
+    try {
+      const created = await createProcedure({ name, is_custom: true });
+      setAllProcedures((prev) => [...prev, created]);
+      setEditSelectedProcedure(created);
+      setEditProcedureSearchValue(created.name);
+      messageApi.success("Procedimento personalizado criado.");
+    } catch (e) {
+      messageApi.error("Erro ao criar procedimento.");
+    } finally {
+      setCreatingEditProcedure(false);
+    }
+  };
+
   const onTreatmentFinish = async (values) => {
     if (!patientId) return;
     if (!selectedProcedure && !procedureSearchValue?.trim()) {
@@ -207,7 +271,6 @@ export default function TreatmentTab({ patientId }) {
       treatmentForm.resetFields();
       setSelectedProcedure(null);
       setProcedureSearchValue("");
-      setProcedureOptions([]);
       fetchTreatments();
     } catch (e) {
       messageApi.error(e.response?.data?.error || "Erro ao adicionar tratamento.");
@@ -221,6 +284,100 @@ export default function TreatmentTab({ patientId }) {
       fetchTreatments();
     } catch (e) {
       messageApi.error("Erro ao atualizar status.");
+    }
+  };
+
+  const closeEditModal = () => {
+    setEditModalOpen(false);
+    setEditingTreatment(null);
+    setEditSelectedProcedure(null);
+    setEditProcedureSearchValue("");
+    editForm.resetFields();
+  };
+
+  const openEditModal = (treatment) => {
+    if (!treatment) return;
+
+    setEditingTreatment(treatment);
+    setEditModalOpen(true);
+
+    editForm.setFieldsValue({
+      plan_type: treatment.plan_type,
+      target_type: treatment.target_type,
+      tooth_fdi: treatment.target_type === "dente" ? treatment.tooth_fdi : null,
+      region_name: treatment.target_type === "regiao" ? treatment.region_name : null,
+      value: treatment.value ?? null,
+    });
+
+    setEditProcedureSearchValue(treatment.procedure_name || "");
+    if (treatment.procedure_id) {
+      const found = allProcedures.find((p) => String(p.id) === String(treatment.procedure_id));
+      setEditSelectedProcedure(
+        found || { id: treatment.procedure_id, name: treatment.procedure_name || "" }
+      );
+    } else {
+      setEditSelectedProcedure(null);
+    }
+  };
+
+  const onEditTreatmentFinish = async (values) => {
+    if (!patientId) return;
+    if (!editingTreatment) return;
+
+    if (!editSelectedProcedure && !editProcedureSearchValue?.trim()) {
+      messageApi.warning("Informe ou busque um procedimento.");
+      return;
+    }
+
+    try {
+      const targetType = values.target_type;
+      const payload = {
+        plan_type: values.plan_type,
+        target_type: targetType,
+        tooth_fdi: targetType === "dente" ? values.tooth_fdi : null,
+        region_name: targetType === "regiao" ? values.region_name : null,
+        value: values.value ?? null,
+      };
+
+      if (editSelectedProcedure) {
+        payload.procedure_id = editSelectedProcedure.id;
+        payload.procedure_name = editSelectedProcedure.name;
+      } else {
+        payload.procedure_id = null;
+        payload.procedure_name = editProcedureSearchValue.trim();
+      }
+
+      await updateTreatment(editingTreatment.id, payload);
+      messageApi.success("Tratamento atualizado.");
+      closeEditModal();
+      fetchTreatments();
+    } catch (e) {
+      messageApi.error(e.response?.data?.error || "Erro ao atualizar tratamento.");
+    }
+  };
+
+  const openDeleteModal = (treatmentId) => {
+    setDeletingTreatmentId(treatmentId);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setDeletingTreatmentId(null);
+  };
+
+  const handleDeleteTreatment = async () => {
+    if (!deletingTreatmentId) return;
+    setDeletingTreatment(true);
+    try {
+      await deleteTreatment(deletingTreatmentId);
+      messageApi.success("Tratamento excluído.");
+      closeDeleteModal();
+      fetchTreatments();
+    } catch (e) {
+      messageApi.error(e.response?.data?.error || "Erro ao excluir tratamento.");
+    } finally {
+      setDeletingTreatment(false);
     }
   };
 
@@ -249,6 +406,20 @@ export default function TreatmentTab({ patientId }) {
           onChange={(v) => handleStatusChange(record.id, v)}
           options={STATUS_OPTIONS}
         />
+      ),
+    },
+    {
+      title: "Ações",
+      key: "actions",
+      render: (_, record) => (
+        <Space size="small">
+          <Button size="small" onClick={() => openEditModal(record)}>
+            Editar
+          </Button>
+          <Button size="small" danger onClick={() => openDeleteModal(record.id)}>
+            Excluir
+          </Button>
+        </Space>
       ),
     },
   ];
@@ -468,6 +639,142 @@ export default function TreatmentTab({ patientId }) {
           scroll={{ x: "max-content" }}
         />
       </Card>
+
+      <Modal
+        open={editModalOpen}
+        title="Editar tratamento"
+        onCancel={closeEditModal}
+        footer={null}
+        destroyOnClose
+        width={720}
+      >
+        <Form
+          form={editForm}
+          layout="vertical"
+          onFinish={onEditTreatmentFinish}
+          initialValues={{ plan_type: "particular", target_type: "dente" }}
+        >
+          <Row gutter={16}>
+            <Col xs={24} sm={12} md={6}>
+              <Form.Item name="plan_type" label="Plano / Particular" rules={[{ required: true }]}>
+                <Select options={[{ value: "plano", label: "Plano" }, { value: "particular", label: "Particular" }]} />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12} md={6}>
+              <Form.Item name="target_type" label="Dente / Região" rules={[{ required: true }]}>
+                <Select options={[{ value: "dente", label: "Dente" }, { value: "regiao", label: "Região" }]} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.target_type !== curr.target_type}>
+            {({ getFieldValue }) =>
+              getFieldValue("target_type") === "dente" ? (
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item name="tooth_fdi" label="Dente (FDI)" rules={[{ required: true }]}>
+                    <Select
+                      showSearch
+                      placeholder="Selecione o dente"
+                      optionFilterProp="label"
+                      options={[
+                        { label: "Permanente", options: FDI_PERMANENT.map((n) => ({ value: n, label: n })) },
+                        { label: "Decíduo", options: FDI_DECIDUOUS.map((n) => ({ value: n, label: n })) },
+                      ]}
+                    />
+                  </Form.Item>
+                </Col>
+              ) : (
+                <Col xs={24} sm={12} md={6}>
+                  <Form.Item name="region_name" label="Região" rules={[{ required: true }]}>
+                    <Select options={REGIONS} placeholder="Superior, Inferior, Hemiarcada" />
+                  </Form.Item>
+                </Col>
+              )
+            }
+          </Form.Item>
+
+          <Row gutter={16}>
+            <Col xs={24} sm={12} md={6}>
+              <Form.Item name="value" label="Valor">
+                <InputNumber
+                  min={0}
+                  max={999999.99}
+                  step={0.01}
+                  style={{ width: "100%" }}
+                  prefix="R$"
+                  placeholder="0,00"
+                  decimalSeparator=","
+                  thousandSeparator="."
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col xs={24}>
+              <div style={{ display: "flex", gap: 16, width: "100%", alignItems: "flex-start", flexWrap: "wrap" }}>
+                <Form.Item label="Procedimento" required style={{ flex: "1 1 200px", marginBottom: 0, minWidth: 0 }}>
+                  <Space.Compact style={{ width: "100%" }}>
+                    <AutoComplete
+                      value={editProcedureSearchValue}
+                      options={editProcedureAutocompleteOptions}
+                      onSearch={(v) => setEditProcedureSearchValue(v ?? "")}
+                      onSelect={(v) => {
+                        if (v === "__create__") {
+                          handleCreateCustomProcedureForEdit();
+                          return;
+                        }
+                        const opt = editProcedureOptions.find((o) => String(o.value) === v);
+                        if (opt?.procedure) setEditSelectedProcedure(opt.procedure);
+                      }}
+                      placeholder="Buscar por nome ou código TUSS (mín. 3 caracteres)"
+                      style={{ width: "100%" }}
+                      maxLength={100}
+                      filterOption={false}
+                      notFoundContent={loadingAllProcedures ? "Carregando..." : null}
+                    />
+                    {editProcedureSearchValue?.trim() && (
+                      <Button type="default" onClick={handleCreateCustomProcedureForEdit} loading={creatingEditProcedure}>
+                        + Criar
+                      </Button>
+                    )}
+                  </Space.Compact>
+                  {editSelectedProcedure && (
+                    <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 4 }}>
+                      Selecionado: {editSelectedProcedure.name}
+                      {editSelectedProcedure.tuss_code ? ` (${editSelectedProcedure.tuss_code})` : ""}
+                    </Text>
+                  )}
+                </Form.Item>
+              </div>
+            </Col>
+          </Row>
+
+          <Row gutter={16} style={{ marginTop: 8 }}>
+            <Col xs={24}>
+              <Space>
+                <Button onClick={closeEditModal}>Cancelar</Button>
+                <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
+                  Salvar alterações
+                </Button>
+              </Space>
+            </Col>
+          </Row>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Excluir tratamento?"
+        open={deleteModalOpen}
+        onOk={handleDeleteTreatment}
+        onCancel={closeDeleteModal}
+        okText="Excluir"
+        cancelText="Cancelar"
+        okButtonProps={{ danger: true }}
+        confirmLoading={deletingTreatment}
+      >
+        <p>Esta ação remove o tratamento permanentemente.</p>
+      </Modal>
 
       <Card size="small" title="Odontograma">
         <OdontogramGrid
