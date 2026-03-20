@@ -1,7 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Card,
-  Typography,
   Form,
   Input,
   Select,
@@ -12,9 +11,9 @@ import {
   Table,
   AutoComplete,
   Space,
-  Tag,
   Row,
   Col,
+  Typography,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import {
@@ -30,11 +29,10 @@ import {
   deleteOdontogramAnnotation,
 } from "../../../services/treatmentService";
 import OdontogramGrid from "../../../components/OdontogramGrid/OdontogramGrid";
+import TreatmentFormModal from "../../../components/TreatmentFormModal/TreatmentFormModal";
 
-const { Title, Text } = Typography;
-const { Option } = Select;
+const { Text } = Typography;
 
-// FDI: permanente 11-18, 21-28, 31-38, 41-48; decíduo 51-55, 61-65, 71-75, 81-85
 const FDI_PERMANENT = [
   ...Array.from({ length: 8 }, (_, i) => String(11 + i)),
   ...Array.from({ length: 8 }, (_, i) => String(21 + i)),
@@ -63,7 +61,7 @@ const STATUS_OPTIONS = [
   { value: "cancelado", label: "Cancelado" },
 ];
 
-export default function TreatmentTab({ patientId }) {
+export default function TreatmentTab({ patientId, isActive }) {
   const [treatmentForm] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -71,22 +69,16 @@ export default function TreatmentTab({ patientId }) {
   const [loadingTreatments, setLoadingTreatments] = useState(false);
   const [allProcedures, setAllProcedures] = useState([]);
   const [loadingAllProcedures, setLoadingAllProcedures] = useState(false);
-  const [creatingProcedure, setCreatingProcedure] = useState(false);
   const [procedureSearchValue, setProcedureSearchValue] = useState("");
   const [selectedProcedure, setSelectedProcedure] = useState(null);
+  const [creatingProcedure, setCreatingProcedure] = useState(false);
 
-  // --- Exclusão de tratamento (modal) ---
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deletingTreatmentId, setDeletingTreatmentId] = useState(null);
   const [deletingTreatment, setDeletingTreatment] = useState(false);
 
-  // --- Edição de tratamento (modal) ---
-  const [editForm] = Form.useForm();
-  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [treatmentFormModalOpen, setTreatmentFormModalOpen] = useState(false);
   const [editingTreatment, setEditingTreatment] = useState(null);
-  const [editProcedureSearchValue, setEditProcedureSearchValue] = useState("");
-  const [editSelectedProcedure, setEditSelectedProcedure] = useState(null);
-  const [creatingEditProcedure, setCreatingEditProcedure] = useState(false);
 
   const [annotations, setAnnotations] = useState([]);
   const [loadingAnnotations, setLoadingAnnotations] = useState(false);
@@ -123,6 +115,13 @@ export default function TreatmentTab({ patientId }) {
     fetchAnnotations();
   }, [fetchTreatments, fetchAnnotations]);
 
+  useEffect(() => {
+    if (isActive && patientId) {
+      fetchTreatments();
+      fetchAnnotations();
+    }
+  }, [isActive, patientId, fetchTreatments, fetchAnnotations]);
+
   const fetchAllProcedures = useCallback(async () => {
     setLoadingAllProcedures(true);
     try {
@@ -155,17 +154,16 @@ export default function TreatmentTab({ patientId }) {
     }));
   }, [allProcedures, procedureSearchValue]);
 
-  const onProcedureSearch = useCallback((value) => {
-    setProcedureSearchValue(value ?? "");
-  }, []);
-
-  const onProcedureSelect = (value, option) => {
-    if (option?.procedure) {
-      setSelectedProcedure(option.procedure);
-    } else {
-      setSelectedProcedure(null);
-    }
-  };
+  const procedureAutocompleteOptions = useMemo(() => {
+    const trimmed = procedureSearchValue?.trim() || "";
+    const showCreate =
+      trimmed.length >= 3 &&
+      procedureOptions.every((o) => o.procedure?.name?.toLowerCase() !== trimmed.toLowerCase());
+    return [
+      ...procedureOptions.map((o) => ({ value: String(o.value), label: o.label })),
+      ...(showCreate ? [{ value: "__create__", label: `Criar procedimento personalizado: "${trimmed}"` }] : []),
+    ];
+  }, [procedureOptions, procedureSearchValue]);
 
   const handleCreateCustomProcedure = async () => {
     const name = procedureSearchValue?.trim();
@@ -184,66 +182,6 @@ export default function TreatmentTab({ patientId }) {
       messageApi.error("Erro ao criar procedimento.");
     } finally {
       setCreatingProcedure(false);
-    }
-  };
-
-  const procedureAutocompleteOptions = useMemo(() => {
-    const trimmed = procedureSearchValue?.trim() || "";
-    const showCreate =
-      trimmed.length >= 3 &&
-      procedureOptions.every((o) => o.procedure?.name?.toLowerCase() !== trimmed.toLowerCase());
-    return [
-      ...procedureOptions.map((o) => ({ value: String(o.value), label: o.label })),
-      ...(showCreate ? [{ value: "__create__", label: `Criar procedimento personalizado: "${trimmed}"` }] : []),
-    ];
-  }, [procedureOptions, procedureSearchValue]);
-
-  // Autocomplete para procedimento no modal de edição
-  const editProcedureOptions = useMemo(() => {
-    const term = (editProcedureSearchValue ?? "").trim().toLowerCase();
-    if (term.length < 3) return [];
-    const list = allProcedures.filter(
-      (p) =>
-        (p.name && p.name.toLowerCase().includes(term)) ||
-        (p.tuss_code && p.tuss_code.toLowerCase().includes(term))
-    );
-    return list.map((p) => ({
-      value: p.id,
-      label: p.tuss_code ? `${p.name} (${p.tuss_code})` : p.name,
-      procedure: p,
-    }));
-  }, [allProcedures, editProcedureSearchValue]);
-
-  const editProcedureAutocompleteOptions = useMemo(() => {
-    const trimmed = editProcedureSearchValue?.trim() || "";
-    const showCreate =
-      trimmed.length >= 3 &&
-      editProcedureOptions.every((o) => o.procedure?.name?.toLowerCase() !== trimmed.toLowerCase());
-    return [
-      ...editProcedureOptions.map((o) => ({ value: String(o.value), label: o.label })),
-      ...(showCreate
-        ? [{ value: "__create__", label: `Criar procedimento personalizado: "${trimmed}"` }]
-        : []),
-    ];
-  }, [editProcedureOptions, editProcedureSearchValue]);
-
-  const handleCreateCustomProcedureForEdit = async () => {
-    const name = editProcedureSearchValue?.trim();
-    if (!name) {
-      messageApi.warning("Digite o nome do procedimento.");
-      return;
-    }
-    setCreatingEditProcedure(true);
-    try {
-      const created = await createProcedure({ name, is_custom: true });
-      setAllProcedures((prev) => [...prev, created]);
-      setEditSelectedProcedure(created);
-      setEditProcedureSearchValue(created.name);
-      messageApi.success("Procedimento personalizado criado.");
-    } catch (e) {
-      messageApi.error("Erro ao criar procedimento.");
-    } finally {
-      setCreatingEditProcedure(false);
     }
   };
 
@@ -290,73 +228,9 @@ export default function TreatmentTab({ patientId }) {
     }
   };
 
-  const closeEditModal = () => {
-    setEditModalOpen(false);
-    setEditingTreatment(null);
-    setEditSelectedProcedure(null);
-    setEditProcedureSearchValue("");
-    editForm.resetFields();
-  };
-
-  const openEditModal = (treatment) => {
-    if (!treatment) return;
-
+  const openTreatmentFormModal = (treatment = null) => {
     setEditingTreatment(treatment);
-    setEditModalOpen(true);
-
-    editForm.setFieldsValue({
-      plan_type: treatment.plan_type,
-      target_type: treatment.target_type,
-      tooth_fdi: treatment.target_type === "dente" ? treatment.tooth_fdi : null,
-      region_name: treatment.target_type === "regiao" ? treatment.region_name : null,
-      value: treatment.value ?? null,
-    });
-
-    setEditProcedureSearchValue(treatment.procedure_name || "");
-    if (treatment.procedure_id) {
-      const found = allProcedures.find((p) => String(p.id) === String(treatment.procedure_id));
-      setEditSelectedProcedure(
-        found || { id: treatment.procedure_id, name: treatment.procedure_name || "" }
-      );
-    } else {
-      setEditSelectedProcedure(null);
-    }
-  };
-
-  const onEditTreatmentFinish = async (values) => {
-    if (!patientId) return;
-    if (!editingTreatment) return;
-
-    if (!editSelectedProcedure && !editProcedureSearchValue?.trim()) {
-      messageApi.warning("Informe ou busque um procedimento.");
-      return;
-    }
-
-    try {
-      const targetType = values.target_type;
-      const payload = {
-        plan_type: values.plan_type,
-        target_type: targetType,
-        tooth_fdi: targetType === "dente" ? values.tooth_fdi : null,
-        region_name: targetType === "regiao" ? values.region_name : null,
-        value: values.value ?? null,
-      };
-
-      if (editSelectedProcedure) {
-        payload.procedure_id = editSelectedProcedure.id;
-        payload.procedure_name = editSelectedProcedure.name;
-      } else {
-        payload.procedure_id = null;
-        payload.procedure_name = editProcedureSearchValue.trim();
-      }
-
-      await updateTreatment(editingTreatment.id, payload);
-      messageApi.success("Tratamento atualizado.");
-      closeEditModal();
-      fetchTreatments();
-    } catch (e) {
-      messageApi.error(e.response?.data?.error || "Erro ao atualizar tratamento.");
-    }
+    setTreatmentFormModalOpen(true);
   };
 
   const openDeleteModal = (treatmentId) => {
@@ -416,7 +290,7 @@ export default function TreatmentTab({ patientId }) {
       key: "actions",
       render: (_, record) => (
         <Space size="small">
-          <Button size="small" onClick={() => openEditModal(record)}>
+          <Button size="small" onClick={() => openTreatmentFormModal(record)}>
             Editar
           </Button>
           <Button size="small" danger onClick={() => openDeleteModal(record.id)}>
@@ -592,7 +466,7 @@ export default function TreatmentTab({ patientId }) {
                     <AutoComplete
                       value={procedureSearchValue}
                       options={procedureAutocompleteOptions}
-                      onSearch={onProcedureSearch}
+                      onSearch={(v) => setProcedureSearchValue(v ?? "")}
                       onSelect={(v) => {
                         if (v === "__create__") {
                           handleCreateCustomProcedure();
@@ -609,7 +483,7 @@ export default function TreatmentTab({ patientId }) {
                     />
                     {procedureSearchValue?.trim() && (
                       <Button type="default" onClick={handleCreateCustomProcedure} loading={creatingProcedure}>
-                        + Criar 
+                        + Criar
                       </Button>
                     )}
                   </Space.Compact>
@@ -643,128 +517,23 @@ export default function TreatmentTab({ patientId }) {
         />
       </Card>
 
-      <Modal
-        open={editModalOpen}
-        title="Editar tratamento"
-        onCancel={closeEditModal}
-        footer={null}
-        destroyOnClose
-        width={720}
-      >
-        <Form
-          form={editForm}
-          layout="vertical"
-          onFinish={onEditTreatmentFinish}
-          initialValues={{ plan_type: "particular", target_type: "dente" }}
-        >
-          <Row gutter={16}>
-            <Col xs={24} sm={12} md={6}>
-              <Form.Item name="plan_type" label="Plano / Particular" rules={[{ required: true }]}>
-                <Select options={[{ value: "plano", label: "Plano" }, { value: "particular", label: "Particular" }]} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} sm={12} md={6}>
-              <Form.Item name="target_type" label="Dente / Região" rules={[{ required: true }]}>
-                <Select options={[{ value: "dente", label: "Dente" }, { value: "regiao", label: "Região" }]} />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.target_type !== curr.target_type}>
-            {({ getFieldValue }) =>
-              getFieldValue("target_type") === "dente" ? (
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="tooth_fdi" label="Dente (FDI)" rules={[{ required: true }]}>
-                    <Select
-                      showSearch
-                      placeholder="Selecione o dente"
-                      optionFilterProp="label"
-                      options={[
-                        { label: "Permanente", options: FDI_PERMANENT.map((n) => ({ value: n, label: n })) },
-                        { label: "Decíduo", options: FDI_DECIDUOUS.map((n) => ({ value: n, label: n })) },
-                      ]}
-                    />
-                  </Form.Item>
-                </Col>
-              ) : (
-                <Col xs={24} sm={12} md={6}>
-                  <Form.Item name="region_name" label="Região" rules={[{ required: true }]}>
-                    <Select options={REGIONS} placeholder="Maxila, Mandíbula, Face, Arcadas..." />
-                  </Form.Item>
-                </Col>
-              )
-            }
-          </Form.Item>
-
-          <Row gutter={16}>
-            <Col xs={24} sm={12} md={6}>
-              <Form.Item name="value" label="Valor">
-                <InputNumber
-                  min={0}
-                  max={999999.99}
-                  step={0.01}
-                  style={{ width: "100%" }}
-                  prefix="R$"
-                  placeholder="0,00"
-                  decimalSeparator=","
-                  thousandSeparator="."
-                />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col xs={24}>
-              <div style={{ display: "flex", gap: 16, width: "100%", alignItems: "flex-start", flexWrap: "wrap" }}>
-                <Form.Item label="Procedimento" required style={{ flex: "1 1 200px", marginBottom: 0, minWidth: 0 }}>
-                  <Space.Compact style={{ width: "100%" }}>
-                    <AutoComplete
-                      value={editProcedureSearchValue}
-                      options={editProcedureAutocompleteOptions}
-                      onSearch={(v) => setEditProcedureSearchValue(v ?? "")}
-                      onSelect={(v) => {
-                        if (v === "__create__") {
-                          handleCreateCustomProcedureForEdit();
-                          return;
-                        }
-                        const opt = editProcedureOptions.find((o) => String(o.value) === v);
-                        if (opt?.procedure) setEditSelectedProcedure(opt.procedure);
-                      }}
-                      placeholder="Buscar por nome ou código TUSS (mín. 3 caracteres)"
-                      style={{ width: "100%" }}
-                      maxLength={100}
-                      filterOption={false}
-                      notFoundContent={loadingAllProcedures ? "Carregando..." : null}
-                    />
-                    {editProcedureSearchValue?.trim() && (
-                      <Button type="default" onClick={handleCreateCustomProcedureForEdit} loading={creatingEditProcedure}>
-                        + Criar
-                      </Button>
-                    )}
-                  </Space.Compact>
-                  {editSelectedProcedure && (
-                    <Text type="secondary" style={{ fontSize: 12, display: "block", marginTop: 4 }}>
-                      Selecionado: {editSelectedProcedure.name}
-                      {editSelectedProcedure.tuss_code ? ` (${editSelectedProcedure.tuss_code})` : ""}
-                    </Text>
-                  )}
-                </Form.Item>
-              </div>
-            </Col>
-          </Row>
-
-          <Row gutter={16} style={{ marginTop: 8 }}>
-            <Col xs={24}>
-              <Space>
-                <Button onClick={closeEditModal}>Cancelar</Button>
-                <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
-                  Salvar alterações
-                </Button>
-              </Space>
-            </Col>
-          </Row>
-        </Form>
-      </Modal>
+      <TreatmentFormModal
+        open={treatmentFormModalOpen}
+        onCancel={() => {
+          setTreatmentFormModalOpen(false);
+          setEditingTreatment(null);
+        }}
+        onSuccess={() => {
+          fetchTreatments();
+          setTreatmentFormModalOpen(false);
+          setEditingTreatment(null);
+        }}
+        patientId={patientId}
+        initialValues={editingTreatment}
+        allProcedures={allProcedures}
+        loadingProcedures={loadingAllProcedures}
+        messageApi={messageApi}
+      />
 
       <Modal
         title="Excluir tratamento?"

@@ -22,6 +22,7 @@ import InfoTab from "./tabs/InfoTab";
 import AnamnesisTab from "./tabs/AnamnesisTab";
 import IncomesTab from "./tabs/IncomesTab";
 import TreatmentTab from "./tabs/TreatmentTab";
+import BudgetTab from "./tabs/BudgetTab";
 import ImagesTab from "./tabs/ImagesTab";
 import DocumentsTab from "./tabs/DocumentsTab";
 import "./Styles.css";
@@ -184,9 +185,14 @@ export default function PatientDetails() {
             children: <IncomesTab patientId={id} />,
           },
           {
+            key: "budget",
+            label: "Orçamento",
+            children: <BudgetTab patientId={id} isActive={activeTab === "budget"} />,
+          },
+          {
             key: "treatment",
             label: "Tratamento",
-            children: <TreatmentTab patientId={id} />,
+            children: <TreatmentTab patientId={id} isActive={activeTab === "treatment"} />,
           },
           {
             key: "images",
