@@ -34,6 +34,7 @@ export default function SubscriptionGuard({ children }) {
       setSubscriptionStatus(status);
 
       // Verificar se tem acesso - usar hasAccess do backend
+      // (inclui trial gratuito de 7 dias sem cartão)
       let access = status.hasAccess === true;
       
       // Se status é canceled, SEMPRE sem acesso (não verificar data)
@@ -41,8 +42,8 @@ export default function SubscriptionGuard({ children }) {
         access = false;
       }
       
-      // Se não tem subscription ou está inactive, sem acesso
-      if (!status.hasSubscription || status.status === "inactive") {
+      // Sem assinatura e não está em trial gratuito = sem acesso
+      if (!status.hasSubscription && status.status !== "trialing") {
         access = false;
       }
 
@@ -155,7 +156,7 @@ export default function SubscriptionGuard({ children }) {
                       style={{ marginBottom: "24px", textAlign: "left" }}
                     />
                     <Paragraph>
-                      Você não pode mais usar os 7 dias grátis. Por favor, renove sua assinatura para continuar.
+                      Por favor, renove sua assinatura para continuar usando o sistema.
                     </Paragraph>
                   </>
                 )}
@@ -180,18 +181,37 @@ export default function SubscriptionGuard({ children }) {
                   style={{ marginBottom: "24px", textAlign: "left" }}
                 />
               </>
+            ) : subscriptionStatus?.trialExpired ? (
+              <>
+                <Alert
+                  message="Período de teste expirado"
+                  description={
+                    <>
+                      <p>
+                        Seu período de teste gratuito de 7 dias expirou em{" "}
+                        <strong>{subscriptionStatus?.endDate ? dayjs(subscriptionStatus.endDate).format("DD/MM/YYYY") : ""}</strong>.
+                      </p>
+                      <p style={{ marginTop: "12px", marginBottom: 0 }}>
+                        Para continuar usando o sistema, assine agora e cadastre seu cartão.
+                      </p>
+                    </>
+                  }
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: "24px", textAlign: "left" }}
+                />
+              </>
             ) : (
               <>
                 <Alert
                   message="Assinatura necessária"
-                  description="Para acessar o sistema, você precisa ter uma assinatura ativa. Comece seu teste grátis de 7 dias agora!"
+                  description="Para acessar o sistema, assine agora. Novos usuários ganham 7 dias grátis sem cadastrar cartão."
                   type="info"
                   showIcon
                   style={{ marginBottom: "24px", textAlign: "left" }}
                 />
                 <Paragraph>
-                  Assine agora e ganhe <strong>7 dias grátis</strong> para testar todas as funcionalidades do sistema.
-                  Após o período de teste, você será cobrado automaticamente.
+                  Assine para continuar usando todas as funcionalidades do sistema.
                 </Paragraph>
               </>
             )}
@@ -220,10 +240,7 @@ export default function SubscriptionGuard({ children }) {
             </div>
 
             <Paragraph type="secondary" style={{ marginTop: "24px", fontSize: "12px" }}>
-              Você será redirecionado para o Stripe para concluir o pagamento de forma segura.
-              {subscriptionStatus?.status !== "canceled" && (
-                <> O cartão será cobrado apenas após os 7 dias de teste grátis.</>
-              )}
+              Você será redirecionado para o Stripe para cadastrar seu cartão e concluir a assinatura de forma segura.
             </Paragraph>
           </div>
         </Modal>

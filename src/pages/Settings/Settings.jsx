@@ -505,12 +505,12 @@ export default function Settings() {
               <Text>Carregando informações da assinatura...</Text>
             </div>
           </div>
-        ) : subscriptionStatus?.hasSubscription && (subscriptionStatus?.status === "active" || subscriptionStatus?.status === "trialing") ? (
+        ) : (subscriptionStatus?.status === "trialing" || (subscriptionStatus?.hasSubscription && subscriptionStatus?.status === "active")) ? (
           <>
             {subscriptionStatus?.status === "trialing" && !subscriptionStatus?.cancelAtPeriodEnd ? (
               <Alert
                 message="Período de teste ativo"
-                description={`Você está no período de teste gratuito de 7 dias. Seu teste expira em ${formatDate(subscriptionStatus.endDate)}. Após essa data, você será cobrado automaticamente.`}
+                description={`Você está no período de teste gratuito de 7 dias (sem cartão). Seu teste expira em ${formatDate(subscriptionStatus.endDate)}. Após essa data, assine e cadastre seu cartão para continuar.`}
                 type="info"
                 showIcon
                 style={{ marginBottom: "24px" }}
@@ -594,6 +594,22 @@ export default function Settings() {
                       : `Reative sua assinatura para continuar usando após ${formatDate(subscriptionStatus?.endDate)}.`}
                   </Paragraph>
                 </>
+              ) : !subscriptionStatus?.hasSubscription && subscriptionStatus?.status === "trialing" ? (
+                <>
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<CreditCardOutlined />}
+                    onClick={handleSubscribe}
+                    loading={processing}
+                    block
+                  >
+                    Assinar Agora
+                  </Button>
+                  <Paragraph type="secondary" style={{ textAlign: "center", marginTop: "8px", fontSize: "12px" }}>
+                    Assine antes do fim do teste para continuar usando sem interrupção.
+                  </Paragraph>
+                </>
               ) : (
                 <>
                   <Button
@@ -604,12 +620,10 @@ export default function Settings() {
                     loading={processing}
                     block
                   >
-                    {subscriptionStatus?.status === "trialing" ? "Cancelar Renovação Automática" : "Cancelar Assinatura"}
+                    Cancelar Assinatura
                   </Button>
                   <Paragraph type="secondary" style={{ textAlign: "center", marginTop: "8px", fontSize: "12px" }}>
-                    {subscriptionStatus?.status === "trialing"
-                      ? `Seu período de teste não será renovado e expirará em ${formatDate(subscriptionStatus?.endDate)}.`
-                      : `Ao cancelar, você continuará tendo acesso até ${formatDate(subscriptionStatus?.endDate)}.`}
+                    Ao cancelar, você continuará tendo acesso até {formatDate(subscriptionStatus?.endDate)}.
                   </Paragraph>
                 </>
               )}

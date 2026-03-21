@@ -217,7 +217,7 @@ export default function Landing() {
         <div className="hero-container">
           <div className="hero-content">
             <div className="trial-badge">
-              <StarFilled /> 7 dias grátis
+              <StarFilled /> 7 dias grátis sem cartão
             </div>
             <Title level={1} className="hero-title">
               Mais tempo para seus pacientes, menos tempo na burocracia.
@@ -245,7 +245,7 @@ export default function Landing() {
               </Button>
             </Space>
             <Text className="hero-note">
-              Sem fidelidade • Após 7 dias, apenas R$ 79,90/mês
+              Sem cartão no cadastro • 7 dias grátis • Após 7 dias, R$ 79,90/mês
             </Text>
           </div>
           <div className="hero-visual">
@@ -767,13 +767,13 @@ export default function Landing() {
           <Card className="cta-card">
             <div className="cta-content">
               <div className="trial-badge-large">
-                <StarFilled /> 7 dias grátis
+                <StarFilled /> 7 dias grátis sem cartão
               </div>
               <Title level={2} className="cta-title">
                 Comece a transformar seu consultório hoje
               </Title>
               <Paragraph className="cta-description">
-                Teste todas as funcionalidades por 7 dias sem compromisso. Após o período de teste, a assinatura é de apenas R$79,90/mês.
+                Teste todas as funcionalidades por 7 dias grátis, sem cadastrar cartão. Após o período, assine por R$79,90/mês.
               </Paragraph>
               <div className="trust-stats">
                 <Text strong style={{ fontSize: '20px', color: '#1677ff' }}>
