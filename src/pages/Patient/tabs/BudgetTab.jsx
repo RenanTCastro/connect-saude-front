@@ -20,8 +20,10 @@ import { PlusOutlined, EditOutlined, PercentageOutlined, FilePdfOutlined, ArrowL
 import dayjs from "dayjs";
 import { getTreatments } from "../../../services/treatmentService";
 import { searchProcedures } from "../../../services/treatmentService";
-import { getBudgets, createBudget, deleteBudget } from "../../../services/budgetService";
+import { getBudgets, getBudget, createBudget, deleteBudget } from "../../../services/budgetService";
 import TreatmentFormModal from "../../../components/TreatmentFormModal/TreatmentFormModal";
+import DocumentEditor from "../../../components/DocumentEditor/DocumentEditor";
+import { DOCUMENT_TYPES } from "../../../utils/documentTemplates";
 
 function formatCurrency(value) {
   if (value == null || isNaN(value)) return "R$ 0,00";
@@ -34,7 +36,7 @@ function getTreatmentDisplayName(t) {
   return target ? `${proc} (${target})` : proc;
 }
 
-export default function BudgetTab({ patientId, isActive }) {
+export default function BudgetTab({ patientId, patient, isActive }) {
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -58,6 +60,8 @@ export default function BudgetTab({ patientId, isActive }) {
   const [treatmentModalOpen, setTreatmentModalOpen] = useState(false);
   const [editingTreatment, setEditingTreatment] = useState(null);
   const [savingBudget, setSavingBudget] = useState(false);
+  const [contractModalOpen, setContractModalOpen] = useState(false);
+  const [selectedBudgetForContract, setSelectedBudgetForContract] = useState(null);
 
   const fetchBudgets = useCallback(async () => {
     if (!patientId) return;
@@ -197,8 +201,14 @@ export default function BudgetTab({ patientId, isActive }) {
     messageApi.info("Geração de PDF em breve.");
   };
 
-  const handleContract = (budget) => {
-    messageApi.info("Funcionalidade de contrato em breve.");
+  const handleContract = async (budget) => {
+    try {
+      const fullBudget = await getBudget(budget.id);
+      setSelectedBudgetForContract(fullBudget);
+      setContractModalOpen(true);
+    } catch (e) {
+      messageApi.error("Erro ao carregar orçamento para o contrato.");
+    }
   };
 
   const openDeleteModal = (budget) => {
@@ -552,6 +562,19 @@ export default function BudgetTab({ patientId, isActive }) {
       >
         <p>Tem certeza que deseja excluir este orçamento? Esta ação não pode ser desfeita.</p>
       </Modal>
+
+      {contractModalOpen && (
+        <DocumentEditor
+          documentType={DOCUMENT_TYPES.CONTRACT}
+          patient={patient}
+          budget={selectedBudgetForContract}
+          open={contractModalOpen}
+          onClose={() => {
+            setContractModalOpen(false);
+            setSelectedBudgetForContract(null);
+          }}
+        />
+      )}
     </div>
   );
 }

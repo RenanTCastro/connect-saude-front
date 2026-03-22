@@ -187,7 +187,7 @@ export default function PatientDetails() {
           {
             key: "budget",
             label: "Orçamento",
-            children: <BudgetTab patientId={id} isActive={activeTab === "budget"} />,
+            children: <BudgetTab patientId={id} patient={patient} isActive={activeTab === "budget"} />,
           },
           {
             key: "treatment",

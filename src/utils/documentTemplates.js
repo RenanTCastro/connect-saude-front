@@ -24,7 +24,51 @@ function wrapUnfilledPlaceholders(html) {
   );
 }
 
-export const getDocumentTemplate = (type, patient = null) => {
+function formatCurrency(value) {
+  if (value == null || isNaN(value)) return "R$ 0,00";
+  return `R$ ${Number(value).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+}
+
+function getProceduresListFromBudget(budget) {
+  if (!budget?.treatments?.length) return "[LISTA DE PROCEDIMENTOS]";
+  return budget.treatments
+    .map((t) => {
+      const proc = t.procedure_name || "Procedimento";
+      const target = t.target_type === "dente" ? `Dente ${t.tooth_fdi}` : t.region_name || "";
+      return target ? `• ${proc} (${target}) - ${formatCurrency(t.value)}` : `• ${proc} - ${formatCurrency(t.value)}`;
+    })
+    .join("\n\n");
+}
+
+function getPaymentConditionsFromBudget(budget) {
+  if (!budget) return "[CONDIÇÕES DE PAGAMENTO]";
+  const total = Number(budget.total) || 0;
+  const down = Number(budget.down_payment) || 0;
+  const installments = Number(budget.installments_count) || 1;
+  if (installments <= 1 && down <= 0) {
+    return `Pagamento à vista no valor total de ${formatCurrency(total)}.`;
+  }
+  const parts = [];
+  if (down > 0) parts.push(`Entrada de ${formatCurrency(down)}`);
+  if (installments > 1) {
+    const remainder = Math.max(0, total - down);
+    const perInstallment = remainder / installments;
+    parts.push(`${installments}x de ${formatCurrency(perInstallment)}`);
+  }
+  return parts.join(" e ") + ".";
+}
+
+export const getDocumentTemplate = (type, patient = null, budget = null) => {
+  const proceduresList = budget ? getProceduresListFromBudget(budget) : "[LISTA DE PROCEDIMENTOS]";
+  const budgetTotal =
+    budget?.total != null
+      ? budget.total
+      : budget?.treatments?.length
+        ? budget.treatments.reduce((s, t) => s + (Number(t.value) || 0), 0) - (Number(budget.discount) || 0)
+        : null;
+  const valorTotal = budgetTotal != null ? formatCurrency(budgetTotal) : "[VALOR TOTAL]";
+  const condicoesPagamento = budget ? getPaymentConditionsFromBudget({ ...budget, total: budgetTotal ?? budget.total }) : "[CONDIÇÕES DE PAGAMENTO]";
+
   const templates = {
     [DOCUMENT_TYPES.CONTRACT]: {
       title: 'Termo de Prestação de Serviços Odontológicos',
@@ -57,7 +101,7 @@ As partes acima identificadas, de comum acordo e com plena capacidade civil, cel
 O presente instrumento tem como finalidade a prestação de serviços odontológicos pelo(a) CONTRATADO(A), devidamente habilitado(a) perante o Conselho Regional de Odontologia, ao(à) paciente **${patient?.full_name || '[NOME DO PACIENTE]'}**, abrangendo os procedimentos descritos a seguir:
 
 **Procedimentos contratados:**  
-[LISTA DE PROCEDIMENTOS]
+${proceduresList}
 
 § 1º Os atendimentos serão realizados conforme agenda previamente acordada entre as partes, respeitando os horários estabelecidos no momento do agendamento.
 
@@ -75,9 +119,9 @@ O(A) CONTRATANTE declara, de forma livre e esclarecida, que o(a) profissional ap
 
 **Cláusula 3ª - Valor dos Serviços**
 
-O valor total acordado para a realização dos procedimentos contratados é de [VALOR TOTAL], correspondente aos custos de materiais, insumos descartáveis e honorários profissionais.
+O valor total acordado para a realização dos procedimentos contratados é de ${valorTotal}, correspondente aos custos de materiais, insumos descartáveis e honorários profissionais.
 
-§ 1º As condições de pagamento são as seguintes: [CONDIÇÕES DE PAGAMENTO].
+§ 1º As condições de pagamento são as seguintes: ${condicoesPagamento}
 
 § 2º O inadimplemento dos honorários poderá acarretar a suspensão do tratamento, garantidos os cuidados necessários à saúde do(a) paciente, bem como a adoção das medidas extrajudiciais e judiciais cabíveis para a cobrança dos valores devidos.
 

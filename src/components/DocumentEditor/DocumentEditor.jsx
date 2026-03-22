@@ -69,6 +69,7 @@ function textToHtmlParagraphs(text) {
 export default function DocumentEditor({
   documentType,
   patient,
+  budget = null,
   open,
   onClose,
 }) {
@@ -80,6 +81,7 @@ export default function DocumentEditor({
   const [showPreview, setShowPreview] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
   const lastDocumentTypeRef = useRef(null);
+  const lastBudgetIdRef = useRef(null);
   const editorRef = useRef(null);
 
   // Medicamentos (somente para receituário)
@@ -214,12 +216,18 @@ export default function DocumentEditor({
   useEffect(() => {
     if (!open) {
       lastDocumentTypeRef.current = null;
+      lastBudgetIdRef.current = null;
       return;
     }
 
-    if (documentType && lastDocumentTypeRef.current !== documentType) {
+    const budgetId = budget?.id ?? null;
+    const shouldReload =
+      documentType &&
+      (lastDocumentTypeRef.current !== documentType || lastBudgetIdRef.current !== budgetId);
+
+    if (shouldReload) {
       setSelectedMedications([]);
-      const template = getDocumentTemplate(documentType, patient);
+      const template = getDocumentTemplate(documentType, patient, budget);
 
       setDocumentTitle(template.title ?? "");
       setHasPatientSignature(template.hasPatientSignature ?? false);
@@ -282,9 +290,10 @@ export default function DocumentEditor({
       }, 0);
 
       lastDocumentTypeRef.current = documentType;
+      lastBudgetIdRef.current = budgetId;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, documentType]);
+  }, [open, documentType, budget]);
 
   const handleTitleChange = (e) => {
     setDocumentTitle(e.target.value);
