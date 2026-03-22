@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   paragraph: {
-    marginBottom: 0,
+    marginBottom: 5,
     lineHeight: 1,
   },
   heading1: {
