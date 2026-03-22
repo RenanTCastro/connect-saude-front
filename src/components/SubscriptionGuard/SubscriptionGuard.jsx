@@ -11,26 +11,17 @@ export default function SubscriptionGuard({ children }) {
   const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     checkSubscriptionStatus();
   }, []);
 
-  // Garantir que modal seja exibido quando não tem acesso
-  useEffect(() => {
-    if (!loading && !hasAccess) {
-      setIsModalVisible(true);
-    }
-  }, [hasAccess, loading]);
-
   const checkSubscriptionStatus = async () => {
     try {
       setLoading(true);
       const res = await api.get("/subscription/status");
       const status = res.data;
-
       setSubscriptionStatus(status);
 
       // Verificar se tem acesso - usar hasAccess do backend
@@ -48,13 +39,6 @@ export default function SubscriptionGuard({ children }) {
       }
 
       setHasAccess(access);
-
-      // Se não tiver acesso, mostrar modal
-      if (!access) {
-        setIsModalVisible(true);
-      } else {
-        setIsModalVisible(false);
-      }
     } catch (err) {
       console.error("Erro ao verificar assinatura:", err);
       // Em caso de erro, permitir acesso temporariamente para não bloquear completamente
@@ -79,7 +63,6 @@ export default function SubscriptionGuard({ children }) {
   };
 
   const handleGoToSettings = () => {
-    setIsModalVisible(false);
     navigate("/app/settings");
   };
 
@@ -88,31 +71,27 @@ export default function SubscriptionGuard({ children }) {
     return children;
   }
 
-  // Se não tiver acesso, mostrar apenas o modal (children ficam bloqueados visualmente)
-  // Sempre renderizar o modal se não tiver acesso, independente do estado isModalVisible
-  const shouldShowModal = !hasAccess;
-  
-  if (hasAccess) {
-    return (
-      <>
-        {children}
-        <Modal
-          title={
-            <div style={{ textAlign: "center" }}>
-              <LockOutlined style={{ fontSize: "48px", color: "#ff4d4f", marginBottom: "16px" }} />
-              <Title level={3} style={{ margin: 0 }}>
-                Acesso Restrito
-              </Title>
-            </div>
-          }
-          open={shouldShowModal || isModalVisible}
-          onCancel={() => {}} // Não permitir fechar clicando fora
-          closable={false}
-          maskClosable={false}
-          footer={null}
-          width={600}
-          centered
-        >
+  // Sempre renderizar children e modal; o modal abre quando !hasAccess (bloqueia acesso)
+  return (
+    <>
+      {children}
+      <Modal
+        title={
+          <div style={{ textAlign: "center" }}>
+            <LockOutlined style={{ fontSize: "48px", color: "#ff4d4f", marginBottom: "16px" }} />
+            <Title level={3} style={{ margin: 0 }}>
+              Acesso Restrito
+            </Title>
+          </div>
+        }
+        open={!hasAccess}
+        onCancel={() => {}} // Não permitir fechar clicando fora
+        closable={false}
+        maskClosable={false}
+        footer={null}
+        width={600}
+        centered
+      >
           <div style={{ textAlign: "center", padding: "20px 0" }}>
             {subscriptionStatus?.status === "canceled" && subscriptionStatus?.endDate ? (
               <>
@@ -244,10 +223,6 @@ export default function SubscriptionGuard({ children }) {
             </Paragraph>
           </div>
         </Modal>
-      </>
-    );
-  }
-
-  // Se tiver acesso, renderizar children normalmente
-  return children;
+    </>
+  );
 }
