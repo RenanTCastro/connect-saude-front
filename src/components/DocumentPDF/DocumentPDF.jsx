@@ -22,8 +22,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   paragraph: {
-    marginBottom: 10,
-    lineHeight: 1.6,
+    marginBottom: 0,
+    lineHeight: 1,
   },
   heading1: {
     fontSize: 16,
