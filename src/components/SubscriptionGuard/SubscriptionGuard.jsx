@@ -102,8 +102,7 @@ export default function SubscriptionGuard({ children }) {
                       description={
                         <>
                           <p>
-                            Seu período de teste gratuito de 7 dias expirou em{" "}
-                            <strong>{dayjs(subscriptionStatus.endDate).format("DD/MM/YYYY")}</strong>.
+                            Seu período de teste gratuito de 7 dias expirou.
                           </p>
                           <p style={{ marginTop: "12px", marginBottom: 0 }}>
                             Para continuar usando o sistema, é necessário assinar agora.
