@@ -65,6 +65,9 @@ function OdontogramGrid({
   onSaveSurfaceAnnotation,
   onDeleteAnnotation,
   onDeleteSurfaceAnnotation,
+  readOnly = false,
+  highlightAnatomyForSelectedTreatment = false,
+  getHasSelectedTreatmentForRegion,
 }) {
   const [activeRegion, setActiveRegion] = useState(null);
   const [showAberto, setShowAberto] = useState(false);
@@ -77,7 +80,8 @@ function OdontogramGrid({
   const isUpper = (qIndex) => qIndex === 0 || qIndex === 1;
 
   const handleToothClick = (fdi) => {
-    const annot = getAnnotationFor(String(fdi), "tooth");
+    if (readOnly) return;
+    const annot = getAnnotationFor?.(String(fdi), "tooth");
     setAnnotationModal({
       fdi: String(fdi),
       elementType: "tooth",
@@ -88,23 +92,31 @@ function OdontogramGrid({
   };
 
   const handleSurfaceClick = (fdi, surface) => {
+    if (readOnly) return;
     setSurfaceModal({ fdi: String(fdi), surface });
+  };
+
+  const handleRegionClick = (key, label) => {
+    if (readOnly) return;
+    setRegionModal({ key, label });
   };
 
   const content = (
     <>
-        <div className="odontogram-filters-top">
-          <div className="odontogram-legend-item">
-            <Checkbox checked={showAberto} onChange={(e) => setShowAberto(e.target.checked)} />
-            <span className="legend-icon blue" />
-            <span>Em tratamento</span>
+        {!readOnly && (
+          <div className="odontogram-filters-top">
+            <div className="odontogram-legend-item">
+              <Checkbox checked={showAberto} onChange={(e) => setShowAberto(e.target.checked)} />
+              <span className="legend-icon blue" />
+              <span>Em tratamento</span>
+            </div>
+            <div className="odontogram-legend-item">
+              <Checkbox checked={showFinalizado} onChange={(e) => setShowFinalizado(e.target.checked)} />
+              <span className="legend-icon green" />
+              <span>Finalizado</span>
+            </div>
           </div>
-          <div className="odontogram-legend-item">
-            <Checkbox checked={showFinalizado} onChange={(e) => setShowFinalizado(e.target.checked)} />
-            <span className="legend-icon green" />
-            <span>Finalizado</span>
-          </div>
-        </div>
+        )}
 
         <div className="odontogram-toggle-wrap">
           <Segmented
@@ -119,9 +131,9 @@ function OdontogramGrid({
           {quadrants.map((fdis, qIndex) => (
             <div key={qIndex} className="odontogram-quadrant">
               {fdis.map((fdi) => {
-                const annot = getAnnotationFor(String(fdi), "tooth");
+                const annot = getAnnotationFor?.(String(fdi), "tooth");
                 const status = annot?.status ?? null;
-                const bothUnchecked = !showAberto && !showFinalizado;
+                const bothUnchecked = readOnly || (!showAberto && !showFinalizado);
                 const visibleByStatus = bothUnchecked
                   ? true
                   : showAberto && showFinalizado
@@ -133,6 +145,10 @@ function OdontogramGrid({
                         : true;
                 if (!visibleByStatus) return null;
                 const surfaceAnnotations = getSurfaceAnnotationsForTooth ? getSurfaceAnnotationsForTooth(String(fdi)) : {};
+                const hasSelectedTreatmentInBudget =
+                  highlightAnatomyForSelectedTreatment &&
+                  getTreatmentsForTooth &&
+                  (getTreatmentsForTooth(String(fdi))?.length ?? 0) > 0;
                 return (
                   <ToothCell
                     key={fdi}
@@ -141,8 +157,9 @@ function OdontogramGrid({
                     annotation={annot}
                     status={annot?.status}
                     surfaceAnnotations={surfaceAnnotations}
-                    onSurfaceClick={handleSurfaceClick}
+                    onSurfaceClick={readOnly ? undefined : handleSurfaceClick}
                     onClick={handleToothClick}
+                    hasSelectedTreatmentInBudget={hasSelectedTreatmentInBudget}
                   />
                 );
               })}
@@ -152,18 +169,25 @@ function OdontogramGrid({
 
         <div className="odontogram-pills">
           {PILL_REGIONS.map(({ key, label }) => {
-            const regionAnnot = getAnnotationFor(key, key);
+            const regionAnnot = getAnnotationFor?.(key, key);
             const hasRegionAnnotation = !!regionAnnot;
+            const hasSelectedTreatment = getHasSelectedTreatmentForRegion?.(key);
+            const pillClass = [
+              hasRegionAnnotation ? "odontogram-pill-has-annotation" : "",
+              hasSelectedTreatment ? "odontogram-pill-selected-in-budget" : "",
+            ]
+              .filter(Boolean)
+              .join(" ");
             return (
               <Button
                 key={key}
-                type={activeRegion === key ? "primary" : "default"}
+                type={activeRegion === key && !readOnly ? "primary" : "default"}
                 size="small"
-                onClick={() => setRegionModal({ key, label })}
-                className={hasRegionAnnotation ? "odontogram-pill-has-annotation" : ""}
+                onClick={() => handleRegionClick(key, label)}
+                className={pillClass || undefined}
               >
                 {label}
-                {hasRegionAnnotation && <span className="tooth-annotation-badge">!</span>}
+                {(hasRegionAnnotation || hasSelectedTreatment) && <span className="tooth-annotation-badge">!</span>}
               </Button>
             );
           })}
@@ -190,7 +214,7 @@ function OdontogramGrid({
         </Modal>
       )}
 
-      {surfaceModal && (
+      {surfaceModal && !readOnly && (
         <SurfaceStatusModal
           visible={!!surfaceModal}
           onClose={() => setSurfaceModal(null)}
@@ -202,7 +226,7 @@ function OdontogramGrid({
         />
       )}
 
-      {regionModal && (
+      {regionModal && !readOnly && (
         <RegionAnnotationModal
           visible={!!regionModal}
           onClose={() => setRegionModal(null)}
@@ -226,7 +250,7 @@ function OdontogramGrid({
         />
       )}
 
-      {annotationModal && (
+      {annotationModal && !readOnly && (
         <AnnotationModal
           visible={!!annotationModal}
           onClose={() => setAnnotationModal(null)}

@@ -18,12 +18,35 @@ import {
 } from "antd";
 import { PlusOutlined, EditOutlined, PercentageOutlined, FilePdfOutlined, ArrowLeftOutlined, FileTextOutlined, DeleteOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { getTreatments } from "../../../services/treatmentService";
-import { searchProcedures } from "../../../services/treatmentService";
+import {
+  getTreatments,
+  searchProcedures,
+  getOdontogramAnnotations,
+  createOdontogramAnnotation,
+  updateOdontogramAnnotation,
+  deleteOdontogramAnnotation,
+} from "../../../services/treatmentService";
 import { getBudgets, getBudget, createBudget, deleteBudget } from "../../../services/budgetService";
 import TreatmentFormModal from "../../../components/TreatmentFormModal/TreatmentFormModal";
 import DocumentEditor from "../../../components/DocumentEditor/DocumentEditor";
+import OdontogramGrid from "../../../components/OdontogramGrid/OdontogramGrid";
+import BudgetPDF from "../../../components/BudgetPDF/BudgetPDF";
+import { PDFDownloadLink, PDFViewer } from "@react-pdf/renderer";
 import { DOCUMENT_TYPES } from "../../../utils/documentTemplates";
+
+const REGION_LABEL_TO_KEY = {
+  Maxila: "maxila",
+  Mandíbula: "mandibula",
+  Face: "face",
+  Arcadas: "arcadas",
+  "Arcada superior": "arcada_superior",
+  "Arcada inferior": "arcada_inferior",
+};
+
+function normalizeRegion(regionName) {
+  if (!regionName) return null;
+  return REGION_LABEL_TO_KEY[regionName] ?? regionName?.toLowerCase()?.replace(/\s+/g, "_");
+}
 
 function formatCurrency(value) {
   if (value == null || isNaN(value)) return "R$ 0,00";
@@ -62,6 +85,12 @@ export default function BudgetTab({ patientId, patient, isActive }) {
   const [savingBudget, setSavingBudget] = useState(false);
   const [contractModalOpen, setContractModalOpen] = useState(false);
   const [selectedBudgetForContract, setSelectedBudgetForContract] = useState(null);
+  const [dentition, setDentition] = useState("permanent");
+  const [annotations, setAnnotations] = useState([]);
+  const [loadingAnnotations, setLoadingAnnotations] = useState(false);
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+  const [previewBudget, setPreviewBudget] = useState(null);
+  const [pdfAnnotations, setPdfAnnotations] = useState([]);
 
   const fetchBudgets = useCallback(async () => {
     if (!patientId) return;
@@ -102,6 +131,19 @@ export default function BudgetTab({ patientId, patient, isActive }) {
     }
   }, [messageApi]);
 
+  const fetchAnnotations = useCallback(async () => {
+    if (!patientId) return;
+    setLoadingAnnotations(true);
+    try {
+      const data = await getOdontogramAnnotations(patientId);
+      setAnnotations(data || []);
+    } catch (e) {
+      messageApi.error("Erro ao carregar anotações.");
+    } finally {
+      setLoadingAnnotations(false);
+    }
+  }, [patientId, messageApi]);
+
   useEffect(() => {
     fetchBudgets();
   }, [fetchBudgets]);
@@ -110,18 +152,120 @@ export default function BudgetTab({ patientId, patient, isActive }) {
     if (viewMode === "create") {
       fetchTreatments();
       fetchProcedures();
+      fetchAnnotations();
     }
-  }, [viewMode, fetchTreatments, fetchProcedures]);
+  }, [viewMode, fetchTreatments, fetchProcedures, fetchAnnotations]);
 
   useEffect(() => {
     if (isActive && patientId) {
       fetchBudgets();
-      if (viewMode === "create") fetchTreatments();
+      if (viewMode === "create") {
+        fetchTreatments();
+        fetchAnnotations();
+      }
     }
-  }, [isActive, patientId, fetchBudgets, viewMode, fetchTreatments]);
+  }, [isActive, patientId, fetchBudgets, viewMode, fetchTreatments, fetchAnnotations]);
 
   const plannedTreatments = treatments.filter((t) => t.status === "planejado");
   const selectedTreatments = plannedTreatments.filter((t) => selectedTreatmentIds.includes(t.id));
+
+  const getTreatmentsForTooth = (fdi) =>
+    selectedTreatments.filter((t) => t.target_type === "dente" && String(t.tooth_fdi) === String(fdi));
+
+  const getHasSelectedTreatmentForRegion = (regionKey) =>
+    selectedTreatments.some(
+      (t) => t.target_type === "regiao" && normalizeRegion(t.region_name) === regionKey
+    );
+
+  const getAnnotationFor = (elementKey, elementType) =>
+    annotations.find(
+      (a) =>
+        a.element_key === elementKey &&
+        a.element_type === elementType &&
+        a.dentition === dentition
+    );
+
+  const getSurfaceAnnotationsForTooth = (fdi) => {
+    const prefix = `${fdi}-`;
+    const surfaceCodes = ["B", "D", "L", "M", "O"];
+    const result = {};
+    const hasSelectedTreatment = getTreatmentsForTooth(fdi).length > 0;
+    surfaceCodes.forEach((code) => {
+      const annot = annotations.find(
+        (a) =>
+          a.element_type === "tooth_surface" &&
+          a.element_key === prefix + code &&
+          a.dentition === dentition
+      );
+      if (annot) {
+        result[code] = annot;
+      } else if (hasSelectedTreatment) {
+        result[code] = { status: "planned" };
+      }
+    });
+    return result;
+  };
+
+  const handleSaveOdontogramAnnotation = async (elementKey, elementType, text, status, existingId) => {
+    if (!patientId) return;
+    try {
+      if (existingId) {
+        await updateOdontogramAnnotation(existingId, { annotation_text: text, status });
+        messageApi.success("Anotação atualizada.");
+      } else {
+        await createOdontogramAnnotation(patientId, {
+          dentition,
+          element_type: elementType,
+          element_key: elementKey,
+          annotation_text: text,
+          status: status || null,
+        });
+        messageApi.success("Anotação adicionada.");
+      }
+      fetchAnnotations();
+    } catch (e) {
+      messageApi.error("Erro ao salvar anotação.");
+    }
+  };
+
+  const handleDeleteOdontogramAnnotation = async (annotationId) => {
+    try {
+      await deleteOdontogramAnnotation(annotationId);
+      messageApi.success("Anotação removida.");
+      fetchAnnotations();
+    } catch (e) {
+      messageApi.error("Erro ao remover anotação.");
+    }
+  };
+
+  const handleSaveSurfaceAnnotation = async (fdi, surface, status, annotationText) => {
+    if (!patientId) return;
+    const elementKey = `${fdi}-${surface}`;
+    const existing = annotations.find(
+      (a) =>
+        a.element_type === "tooth_surface" &&
+        a.element_key === elementKey &&
+        a.dentition === dentition
+    );
+    try {
+      if (existing) {
+        await updateOdontogramAnnotation(existing.id, { status, annotation_text: annotationText ?? null });
+        messageApi.success("Anotação da face atualizada.");
+      } else {
+        await createOdontogramAnnotation(patientId, {
+          dentition,
+          element_type: "tooth_surface",
+          element_key: elementKey,
+          annotation_text: annotationText ?? null,
+          status,
+        });
+        messageApi.success("Anotação da face adicionada.");
+      }
+      fetchAnnotations();
+    } catch (e) {
+      messageApi.error("Erro ao salvar anotação da face.");
+    }
+  };
   const subtotal = selectedTreatments.reduce((sum, t) => sum + (Number(t.value) || 0), 0);
   const totalWithDiscount = Math.max(0, subtotal - (Number(discount) || 0));
   const remainingAfterDownPayment = hasInstallments
@@ -197,8 +341,18 @@ export default function BudgetTab({ patientId, patient, isActive }) {
     }
   };
 
-  const handleGeneratePdf = (budget) => {
-    messageApi.info("Geração de PDF em breve.");
+  const handleGeneratePdf = async (budget) => {
+    try {
+      const [fullBudget, annots] = await Promise.all([
+        getBudget(budget.id),
+        patientId ? getOdontogramAnnotations(patientId) : Promise.resolve([]),
+      ]);
+      setPreviewBudget(fullBudget);
+      setPdfAnnotations(annots || []);
+      setPdfPreviewOpen(true);
+    } catch (e) {
+      messageApi.error("Erro ao carregar orçamento para o PDF.");
+    }
   };
 
   const handleContract = async (budget) => {
@@ -276,6 +430,24 @@ export default function BudgetTab({ patientId, patient, isActive }) {
               </Col>
             </Row>
           </Form>
+        </Card>
+
+        <Card size="small" title="Odontograma">
+          <OdontogramGrid
+            inline
+            dentition={dentition}
+            onDentitionChange={setDentition}
+            annotations={annotations}
+            getAnnotationFor={getAnnotationFor}
+            getSurfaceAnnotationsForTooth={getSurfaceAnnotationsForTooth}
+            getTreatmentsForTooth={getTreatmentsForTooth}
+            onSaveAnnotation={handleSaveOdontogramAnnotation}
+            onSaveSurfaceAnnotation={handleSaveSurfaceAnnotation}
+            onDeleteAnnotation={handleDeleteOdontogramAnnotation}
+            onDeleteSurfaceAnnotation={handleDeleteOdontogramAnnotation}
+            highlightAnatomyForSelectedTreatment
+            getHasSelectedTreatmentForRegion={getHasSelectedTreatmentForRegion}
+          />
         </Card>
 
         <Row gutter={24}>
@@ -581,6 +753,64 @@ export default function BudgetTab({ patientId, patient, isActive }) {
           }}
         />
       )}
+
+      <Modal
+        title="Visualizar orçamento"
+        open={pdfPreviewOpen}
+        onCancel={() => {
+          setPdfPreviewOpen(false);
+          setPreviewBudget(null);
+        }}
+        width="90%"
+        style={{ maxWidth: 900 }}
+        footer={[
+          <Button
+            key="close"
+            onClick={() => {
+              setPdfPreviewOpen(false);
+              setPreviewBudget(null);
+              setPdfAnnotations([]);
+            }}
+          >
+            Fechar
+          </Button>,
+          ...(previewBudget
+            ? [
+                <PDFDownloadLink
+                  key="download"
+                  document={
+                <BudgetPDF
+                  patient={patient}
+                  budget={previewBudget}
+                  dentition={dentition}
+                  annotations={pdfAnnotations}
+                />
+              }
+              fileName={`Orcamento_${previewBudget.budget_date ? dayjs(previewBudget.budget_date).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD")}.pdf`}
+            >
+              {({ loading }) => (
+                <Button type="primary" loading={loading} icon={<FilePdfOutlined />}>
+                  {loading ? "Gerando..." : "Baixar PDF"}
+                </Button>
+              )}
+            </PDFDownloadLink>,
+              ]
+            : []),
+        ]}
+      >
+        {previewBudget && (
+          <div style={{ height: "75vh", overflow: "auto" }}>
+            <PDFViewer width="100%" height="100%">
+              <BudgetPDF
+                patient={patient}
+                budget={previewBudget}
+                dentition={dentition}
+                annotations={pdfAnnotations}
+              />
+            </PDFViewer>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

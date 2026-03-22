@@ -181,6 +181,12 @@
   border-radius: 20px;
 }
 
+.odontogram-pill-selected-in-budget {
+  background-color: rgba(250, 173, 20, 0.2) !important;
+  border-color: #faad14 !important;
+  color: #ad6800;
+}
+
 .odontogram-legend {
   display: flex;
   align-items: center;
