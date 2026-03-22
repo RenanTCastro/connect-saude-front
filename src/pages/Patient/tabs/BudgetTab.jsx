@@ -511,24 +511,28 @@ export default function BudgetTab({ patientId, patient, isActive }) {
               {
                 title: "",
                 key: "actions",
-                width: 120,
+                width: 280,
                 render: (_, record) => (
-                  <Space size="small" wrap>
-                    <Tooltip title="Gerar PDF">
+                  <Space size="small" wrap={false}>
+                    <Tooltip title="Gerar orçamento">
                       <Button
                         type="default"
                         size="small"
                         icon={<FilePdfOutlined />}
                         onClick={() => handleGeneratePdf(record)}
-                      />
+                      >
+                        Gerar orçamento
+                      </Button>
                     </Tooltip>
-                    <Tooltip title="Contrato">
+                    <Tooltip title="Gerar contrato">
                       <Button
                         type="default"
                         size="small"
                         icon={<FileTextOutlined />}
                         onClick={() => handleContract(record)}
-                      />
+                      >
+                        Gerar contrato
+                      </Button>
                     </Tooltip>
                     <Tooltip title="Excluir">
                       <Button
@@ -537,7 +541,9 @@ export default function BudgetTab({ patientId, patient, isActive }) {
                         danger
                         icon={<DeleteOutlined />}
                         onClick={() => openDeleteModal(record)}
-                      />
+                      >
+                        Excluir
+                      </Button>
                     </Tooltip>
                   </Space>
                 ),

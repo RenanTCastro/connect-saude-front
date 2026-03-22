@@ -82,6 +82,7 @@ export default function DocumentEditor({
   const [messageApi, contextHolder] = message.useMessage();
   const lastDocumentTypeRef = useRef(null);
   const lastBudgetIdRef = useRef(null);
+  const templateBodyRef = useRef("");
   const editorRef = useRef(null);
 
   // Medicamentos (somente para receituário)
@@ -217,6 +218,7 @@ export default function DocumentEditor({
     if (!open) {
       lastDocumentTypeRef.current = null;
       lastBudgetIdRef.current = null;
+      templateBodyRef.current = "";
       return;
     }
 
@@ -277,7 +279,9 @@ export default function DocumentEditor({
       }
 
       if (!isStructuredForm) {
-        setDocumentBody(template.body ?? "");
+        const body = template.body ?? "";
+        templateBodyRef.current = body;
+        setDocumentBody(body);
       }
 
       setTimeout(() => {
@@ -473,7 +477,9 @@ export default function DocumentEditor({
       return body;
     }
 
-    return (editorRef.current?.innerHTML ?? documentBody) || "";
+    const editorHtml = editorRef.current?.innerHTML?.trim();
+    const body = editorHtml || documentBody || templateBodyRef.current;
+    return body || "";
   }, [
     isPrescription,
     isCertificate,
