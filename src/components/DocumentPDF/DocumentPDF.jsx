@@ -46,6 +46,10 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: "bold",
   },
+  placeholderUnfilled: {
+    color: "#c0392b",
+    fontWeight: 600,
+  },
   italic: {
     fontStyle: "italic",
   },
@@ -116,18 +120,29 @@ const processInlineStyles = (text, depth = 0) => {
 
   // Regex para encontrar tags de estilo (suporta atributos como style="..." do contentEditable)
   const styleRegex = /<(strong|b|em|i|u)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi;
+  const placeholderRegex = /<span\s+class="doc-placeholder-unfilled"[^>]*>([\s\S]*?)<\/span>/gi;
   let match;
   const matches = [];
   
-  // Coletar todas as matches primeiro
+  // Coletar todas as matches primeiro (estilo e placeholders)
   while ((match = styleRegex.exec(text)) !== null) {
     matches.push({
       index: match.index,
       length: match[0].length,
+      type: "style",
       tag: match[1].toLowerCase(),
       content: match[2],
     });
   }
+  while ((match = placeholderRegex.exec(text)) !== null) {
+    matches.push({
+      index: match.index,
+      length: match[0].length,
+      type: "placeholder",
+      content: match[1],
+    });
+  }
+  matches.sort((a, b) => a.index - b.index);
 
   // Processar matches
   matches.forEach((matchData) => {
@@ -139,9 +154,11 @@ const processInlineStyles = (text, depth = 0) => {
       }
     }
 
-    // Determinar estilo baseado na tag
+    // Determinar estilo baseado na tag ou tipo
     let style = {};
-    if (matchData.tag === "strong" || matchData.tag === "b") {
+    if (matchData.type === "placeholder") {
+      style = styles.placeholderUnfilled;
+    } else if (matchData.tag === "strong" || matchData.tag === "b") {
       style = styles.bold;
     } else if (matchData.tag === "em" || matchData.tag === "i") {
       style = styles.italic;

@@ -341,7 +341,20 @@ export default function DocumentEditor({
     updateContent();
   };
 
+  /** Remove estilo vermelho de placeholders que foram preenchidos (texto não é mais [CAMPO]) */
+  const normalizeFilledPlaceholders = useCallback(() => {
+    if (!editorRef.current) return;
+    const placeholders = editorRef.current.querySelectorAll(".doc-placeholder-unfilled");
+    placeholders.forEach((el) => {
+      const text = el.textContent?.trim() ?? "";
+      if (text && !/^\[.+\]$/.test(text)) {
+        el.classList.remove("doc-placeholder-unfilled");
+      }
+    });
+  }, []);
+
   const handleEditorInput = () => {
+    normalizeFilledPlaceholders();
     updateContent();
   };
 
@@ -349,6 +362,7 @@ export default function DocumentEditor({
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData("text");
     document.execCommand("insertText", false, text);
+    normalizeFilledPlaceholders();
     updateContent();
   };
 

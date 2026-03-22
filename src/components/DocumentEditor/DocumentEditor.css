@@ -72,3 +72,10 @@
 .document-editor-container .editor-content li {
   margin: 4px 0;
 }
+
+/* Placeholders não preenchidos em vermelho */
+.document-editor-container .doc-placeholder-unfilled,
+.doc-placeholder-unfilled {
+  color: #c0392b;
+  font-weight: 500;
+}

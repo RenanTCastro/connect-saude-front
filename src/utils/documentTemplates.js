@@ -15,11 +15,20 @@ function mdToHtml(md) {
   return marked(md.trim(), { async: false });
 }
 
+/** Envolve placeholders [CAMPO] não preenchidos em span vermelho para destaque */
+function wrapUnfilledPlaceholders(html) {
+  if (!html || typeof html !== "string") return html || "";
+  return html.replace(
+    /\[([^\]]+)\]/g,
+    '<span class="doc-placeholder-unfilled">[$1]</span>'
+  );
+}
+
 export const getDocumentTemplate = (type, patient = null) => {
   const templates = {
     [DOCUMENT_TYPES.CONTRACT]: {
       title: 'Termo de Prestação de Serviços Odontológicos',
-      body: mdToHtml(`
+      body: wrapUnfilledPlaceholders(mdToHtml(`
 ## I - IDENTIFICAÇÃO DAS PARTES
 
 **PACIENTE (CONTRATANTE):**
@@ -153,19 +162,7 @@ As partes reconhecem o presente instrumento como título executivo extrajudicial
 **Cláusula 13ª - Foro de Eleição**
 
 Para a resolução de quaisquer conflitos decorrentes deste instrumento, as partes elegem o foro da comarca onde está situado o consultório ou clínica, ou o foro mais próximo dentro da mesma circunscrição judiciária, com renúncia expressa a qualquer outro.
-
-## IX - ASSINATURAS
-
-Cidade: [CIDADE], data: [DATA] (____/____/______).
-
-_____________________________________________  
-**${patient?.full_name || '[NOME DO PACIENTE]'}** - CPF: ${patient?.cpf || '[CPF]'}  
-CONTRATANTE
-
-_____________________________________________  
-[NOME DO PROFISSIONAL OU CLÍNICA] - CRO: [CRO]  
-CONTRATADO(A)
-      `),
+`)),
       hasPatientSignature: true,
       hasProfessionalSignature: true
     },
