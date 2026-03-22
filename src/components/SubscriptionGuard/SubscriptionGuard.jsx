@@ -121,8 +121,7 @@ export default function SubscriptionGuard({ children }) {
                       description={
                         <>
                           <p>
-                            Sua assinatura foi cancelada e expirou em{" "}
-                            <strong>{dayjs(subscriptionStatus.endDate).format("DD/MM/YYYY")}</strong>.
+                            Sua assinatura foi cancelada e expirou.
                           </p>
                           <p style={{ marginTop: "12px", marginBottom: 0 }}>
                             Para continuar usando o sistema, é necessário renovar sua assinatura.
@@ -146,8 +145,7 @@ export default function SubscriptionGuard({ children }) {
                   description={
                     <>
                       <p>
-                        Seu período de teste de 7 dias expirou em{" "}
-                        <strong>{dayjs(subscriptionStatus.endDate).format("DD/MM/YYYY")}</strong>.
+                        Seu período de teste de 7 dias expirou.
                       </p>
                       <p style={{ marginTop: "12px", marginBottom: 0 }}>
                         Para continuar usando o sistema, é necessário assinar agora.
@@ -166,8 +164,7 @@ export default function SubscriptionGuard({ children }) {
                   description={
                     <>
                       <p>
-                        Seu período de teste gratuito de 7 dias expirou em{" "}
-                        <strong>{subscriptionStatus?.endDate ? dayjs(subscriptionStatus.endDate).format("DD/MM/YYYY") : ""}</strong>.
+                        Seu período de teste gratuito de 7 dias expirou.
                       </p>
                       <p style={{ marginTop: "12px", marginBottom: 0 }}>
                         Para continuar usando o sistema, assine agora e cadastre seu cartão.
