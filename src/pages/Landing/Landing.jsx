@@ -364,6 +364,10 @@ export default function Landing() {
                             </li>
                             <li>
                               <CheckCircleOutlined className="feature-check-icon" />
+                              <Text>Planejamento de tratamento completo e geração de orçamentos</Text>
+                            </li>
+                            <li>
+                              <CheckCircleOutlined className="feature-check-icon" />
                               <Text>Anexos: salve arquivos e fotos do paciente de forma organizada</Text>
                             </li>
                             <li>

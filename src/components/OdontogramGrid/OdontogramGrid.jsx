@@ -11,14 +11,12 @@ export const SURFACE_STATUS_LABELS = {
   caries: "Vermelho - Cárie / Doença ativa",
   restoration: "Azul - Restauração existente",
   completed: "Verde - Tratamento concluído",
-  planned: "Amarelo - Tratamento planejado",
 };
 
 const SURFACE_STATUS_NAMES = {
   caries: "Vermelho",
   restoration: "Azul",
   completed: "Verde",
-  planned: "Amarelo",
 };
 
 // FDI by quadrant: [topLeft, topRight, bottomLeft, bottomRight]
@@ -421,7 +419,7 @@ function SurfaceStatusModal({
             placeholder="Selecione a cor"
             style={{ width: "100%" }}
             allowClear
-            options={["caries", "restoration", "completed", "planned"].map((status) => ({
+            options={["caries", "restoration", "completed"].map((status) => ({
               value: status,
               label: (
                 <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
