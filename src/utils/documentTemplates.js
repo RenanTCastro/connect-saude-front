@@ -195,15 +195,11 @@ Este contrato poderá ser rescindido por qualquer das partes em caso de descumpr
 
 O(A) CONTRATANTE [AUTORIZA / NÃO AUTORIZA] a utilização dos registros fotográficos e/ou documentais de seu tratamento para fins de estudo, publicação científica ou divulgação educacional, garantida em qualquer hipótese a preservação de sua identidade e dados pessoais, conforme a LGPD.
 
-**Cláusula 11ª - Validade da Assinatura Eletrônica**
-
-As partes reconhecem como legítima e juridicamente válida a assinatura digital ou eletrônica do presente instrumento, dispensada a assinatura física, nos termos da legislação vigente aplicável aos documentos eletrônicos.
-
-**Cláusula 12ª - Título Executivo Extrajudicial**
+**Cláusula 11ª - Título Executivo Extrajudicial**
 
 As partes reconhecem o presente instrumento como título executivo extrajudicial, nos termos do art. 784 do Código de Processo Civil.
 
-**Cláusula 13ª - Foro de Eleição**
+**Cláusula 12ª - Foro de Eleição**
 
 Para a resolução de quaisquer conflitos decorrentes deste instrumento, as partes elegem o foro da comarca onde está situado o consultório ou clínica, ou o foro mais próximo dentro da mesma circunscrição judiciária, com renúncia expressa a qualquer outro.
 `)),
