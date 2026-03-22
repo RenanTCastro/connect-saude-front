@@ -35,7 +35,7 @@ export const getDocumentTemplate = (type, patient = null) => {
 
 **${patient?.full_name || '[NOME DO PACIENTE]'}**  
 CPF: ${patient?.cpf || '[CPF]'}  
-Data de Nascimento: ${patient?.birth_date || '[DATA DE NASCIMENTO]'}  
+Data de Nascimento: ${patient?.birth_date ? dayjs(patient.birth_date).format('DD/MM/YYYY') : '[DATA DE NASCIMENTO]'}  
 Endereço: ${patient?.street ? [patient.street, patient.complement, patient.neighborhood, patient.city, patient.state].filter(Boolean).join(', ') : '[ENDEREÇO COMPLETO]'}  
 CEP: ${patient?.zip_code || '[CEP]'}  
 Telefone: ${patient?.phone || '[TELEFONE]'}  
