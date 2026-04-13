@@ -34,3 +34,20 @@
   font-size: 12px;
   line-height: 1.4;
 }
+
+.register-legal-modal .register-legal-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.register-legal-declaration {
+  margin: 0 0 8px;
+  white-space: pre-line;
+  line-height: 1.55;
+  font-size: 14px;
+  color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+}
