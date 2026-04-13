@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router-dom";
 
+import RootLayout from "./components/RootLayout/RootLayout";
 import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Landing from "./pages/Landing/Landing";
@@ -19,47 +20,52 @@ import TestPDF from "./pages/TestPDF/TestPDF";
 
 const router = createBrowserRouter([
     {
-        path: "/",
-        element: <Landing />,
-    },
-    {
-        path: "/landing",
-        element: <Landing />,
-    },
-    {
-        path: "/login",
-        element: <Login />,
-    },
-    {
-        path: "/register",
-        element: <Register />,
-    },
-    {
-        path: "/politica-de-privacidade",
-        element: <PrivacyPolicy />,
-    },
-    {
-        path: "/termos-de-uso",
-        element: <TermsOfUse />,
-    },
-    {
-        path: "/app",
-        element: <AppLayout />,
+        element: <RootLayout />,
         children: [
-            { index: true, element: <ProtectedRoute><SubscriptionGuard><CashFlow/></SubscriptionGuard></ProtectedRoute>},
-            { path: "inventory", element: <ProtectedRoute><SubscriptionGuard><Inventory /></SubscriptionGuard></ProtectedRoute>},
-            { path: "patient", element: <ProtectedRoute><SubscriptionGuard><Patients /></SubscriptionGuard></ProtectedRoute>},
-            { path: "patient/:id", element: <ProtectedRoute><SubscriptionGuard><Patient /></SubscriptionGuard></ProtectedRoute>},
-            { path: "sales", element: <ProtectedRoute><SubscriptionGuard><SalesCRM /></SubscriptionGuard></ProtectedRoute>},
-            { path: "appointment", element: <ProtectedRoute><SubscriptionGuard><Appointment /></SubscriptionGuard></ProtectedRoute>},
-            { path: "settings", element: <ProtectedRoute><Settings /></ProtectedRoute>},
-            { path: "test-pdf", element: <ProtectedRoute><TestPDF /></ProtectedRoute>},
-            { path: "*", element: <ProtectedRoute><SubscriptionGuard><>Página não encontrada</></SubscriptionGuard></ProtectedRoute> },
+            {
+                path: "/",
+                element: <Landing />,
+            },
+            {
+                path: "/landing",
+                element: <Landing />,
+            },
+            {
+                path: "/login",
+                element: <Login />,
+            },
+            {
+                path: "/register",
+                element: <Register />,
+            },
+            {
+                path: "/politica-de-privacidade",
+                element: <PrivacyPolicy />,
+            },
+            {
+                path: "/termos-de-uso",
+                element: <TermsOfUse />,
+            },
+            {
+                path: "/app",
+                element: <AppLayout />,
+                children: [
+                    { index: true, element: <ProtectedRoute><SubscriptionGuard><CashFlow/></SubscriptionGuard></ProtectedRoute>},
+                    { path: "inventory", element: <ProtectedRoute><SubscriptionGuard><Inventory /></SubscriptionGuard></ProtectedRoute>},
+                    { path: "patient", element: <ProtectedRoute><SubscriptionGuard><Patients /></SubscriptionGuard></ProtectedRoute>},
+                    { path: "patient/:id", element: <ProtectedRoute><SubscriptionGuard><Patient /></SubscriptionGuard></ProtectedRoute>},
+                    { path: "sales", element: <ProtectedRoute><SubscriptionGuard><SalesCRM /></SubscriptionGuard></ProtectedRoute>},
+                    { path: "appointment", element: <ProtectedRoute><SubscriptionGuard><Appointment /></SubscriptionGuard></ProtectedRoute>},
+                    { path: "settings", element: <ProtectedRoute><Settings /></ProtectedRoute>},
+                    { path: "test-pdf", element: <ProtectedRoute><TestPDF /></ProtectedRoute>},
+                    { path: "*", element: <ProtectedRoute><SubscriptionGuard><>Página não encontrada</></SubscriptionGuard></ProtectedRoute> },
+                ],
+            },
+            {
+                path: "*",
+                element: <Landing />,
+            },
         ],
-    },
-    {
-        path: "*", 
-        element: <Landing />,
     },
 ]);
 

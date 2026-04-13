@@ -1,3 +1,14 @@
+/* Botão de WhatsApp fixo — sobe quando o banner de cookies está visível */
+body.cookie-banner-visible .whatsapp-button {
+  bottom: 120px !important;
+}
+
+@media (max-width: 768px) {
+  body.cookie-banner-visible .whatsapp-button {
+    bottom: 140px !important;
+  }
+}
+
 /* Botão de WhatsApp fixo */
 .whatsapp-button {
   position: fixed !important;
