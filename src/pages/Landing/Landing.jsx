@@ -846,6 +846,17 @@ export default function Landing() {
                 </li>
               </ul>
             </div>
+            <div className="footer-section">
+              <Text strong>Legal</Text>
+              <ul>
+                <li>
+                  <Link to="/politica-de-privacidade">Política de Privacidade</Link>
+                </li>
+                <li>
+                  <Link to="/termos-de-uso">Termos de Uso</Link>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
         <div className="footer-bottom">

@@ -1,0 +1,87 @@
+POLÍTICA DE PRIVACIDADE – CONNECT SAÚDE
+Última atualização: 14/04/2026
+A presente Política de Privacidade descreve como o Connect Saúde coleta, utiliza, armazena e protege os dados pessoais dos usuários, em conformidade com a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados – LGPD).
+
+1. DEFINIÇÕES
+Para fins desta política:
+Dados pessoais: qualquer informação que identifique ou possa identificar uma pessoa.
+Dados sensíveis: dados relacionados à saúde, biometria ou informações clínicas.
+Usuário: qualquer pessoa que utilize a plataforma Connect Saúde.
+
+2. DADOS COLETADOS
+O Connect Saúde poderá coletar os seguintes dados:
+2.1 Dados fornecidos pelo usuário:
+Nome completo
+E-mail
+Telefone
+CPF (quando necessário)
+Dados de login (senha criptografada)
+2.2 Dados de pacientes (quando aplicável):
+Histórico clínico
+Informações de atendimento
+Procedimentos realizados
+Dados odontológicos e de saúde
+2.3 Dados coletados automaticamente:
+Endereço IP
+Dados de navegação
+Cookies
+Informações de dispositivo
+
+3. FINALIDADE DO USO DOS DADOS
+Os dados coletados são utilizados para:
+Operação da plataforma
+Gestão de pacientes e prontuários
+Comunicação com usuários
+Processamento de pagamentos
+Cumprimento de obrigações legais
+Segurança e prevenção de fraudes
+
+4. BASE LEGAL
+O tratamento de dados ocorre com base em:
+Consentimento do titular
+Execução de contrato
+Cumprimento de obrigação legal
+Proteção da vida ou da saúde
+Legítimo interesse
+
+5. COMPARTILHAMENTO DE DADOS
+Os dados poderão ser compartilhados com:
+Processadores de pagamento (ex: Stripe)
+Serviços de hospedagem e armazenamento
+Autoridades legais, quando exigido
+Não vendemos dados pessoais.
+
+6. ARMAZENAMENTO E SEGURANÇA
+Adotamos medidas de segurança como:
+Criptografia de dados
+Controle de acesso
+Monitoramento de sistemas
+Os dados são armazenados apenas pelo tempo necessário para cumprir suas finalidades.
+
+7. DIREITOS DO TITULAR
+Nos termos da LGPD, o usuário pode:
+Acessar seus dados
+Corrigir dados incompletos
+Solicitar exclusão
+Revogar consentimento
+Solicitar portabilidade
+Solicitações podem ser feitas pelo contato abaixo.
+
+8. COOKIES
+Utilizamos cookies para:
+Melhorar a experiência do usuário
+Análise de uso da plataforma
+Funcionalidades essenciais
+O usuário pode gerenciar cookies no navegador.
+
+9. ALTERAÇÕES NA POLÍTICA
+Esta política poderá ser atualizada a qualquer momento. Recomendamos revisão periódica.
+
+10. CONTATO
+Para dúvidas ou solicitações relacionadas a dados pessoais:
+E-mail: connectsaudesuporte@gmail.com
+Responsável: Connect Saúde
+
+11. DISPOSIÇÕES FINAIS
+Ao utilizar a plataforma, o usuário declara estar ciente e de acordo com esta Política de Privacidade.
+

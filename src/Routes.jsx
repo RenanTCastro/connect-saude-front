@@ -3,6 +3,8 @@ import { createBrowserRouter } from "react-router-dom";
 import Login from "./pages/Login/Login";
 import Register from "./pages/Register/Register";
 import Landing from "./pages/Landing/Landing";
+import PrivacyPolicy from "./pages/PrivacyPolicy/PrivacyPolicy";
+import TermsOfUse from "./pages/TermsOfUse/TermsOfUse";
 import Inventory from "./pages/Inventory/Inventory";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import SubscriptionGuard from "./components/SubscriptionGuard/SubscriptionGuard";
@@ -31,6 +33,14 @@ const router = createBrowserRouter([
     {
         path: "/register",
         element: <Register />,
+    },
+    {
+        path: "/politica-de-privacidade",
+        element: <PrivacyPolicy />,
+    },
+    {
+        path: "/termos-de-uso",
+        element: <TermsOfUse />,
     },
     {
         path: "/app",
