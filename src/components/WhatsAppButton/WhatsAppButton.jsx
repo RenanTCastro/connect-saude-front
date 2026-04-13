@@ -16,7 +16,7 @@ const WhatsAppIcon = () => (
 
 export default function WhatsAppButton() {
   const handleWhatsAppClick = () => {
-    const phoneNumber = "5577999693199"; // 77 999693199 com código do país
+    const phoneNumber = "5577999531185";
     const message = encodeURIComponent("Olá, preciso de ajuda com o Connect Saúde!");
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
     window.open(whatsappUrl, "_blank");
