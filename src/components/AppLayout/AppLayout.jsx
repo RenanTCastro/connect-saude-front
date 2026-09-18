@@ -14,7 +14,7 @@ import {
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { logout } from "../../helper/auth";
 import logo from "../../assets/logo.svg";
-import WhatsAppButton from "../WhatsAppButton/WhatsAppButton";
+import EmailButton from "../EmailButton/EmailButton";
 
 import "./Styles.css";
 
@@ -177,7 +177,7 @@ export default function AppLayout() {
       )}
 
       {/* Botão de WhatsApp fixo */}
-      <WhatsAppButton />
+      <EmailButton />
     </Layout>
   );
 }

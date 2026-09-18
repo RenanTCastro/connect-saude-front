@@ -1,0 +1,59 @@
+/* Botão de E-mail fixo — sobe quando o banner de cookies está visível */
+body.cookie-banner-visible .email-button {
+  bottom: 120px !important;
+}
+
+@media (max-width: 768px) {
+  body.cookie-banner-visible .email-button {
+    bottom: 140px !important;
+  }
+}
+
+/* Botão de E-mail fixo — posicionado acima do botão de WhatsApp */
+.email-button {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  width: 60px !important;
+  height: 60px !important;
+  background-color: #1677ff !important;
+  border-color: #1677ff !important;
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.4) !important;
+  z-index: 1000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s ease !important;
+}
+
+.email-button:hover {
+  background-color: #0958d9 !important;
+  border-color: #0958d9 !important;
+  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.6) !important;
+  transform: scale(1.1) !important;
+}
+
+.email-button:active {
+  transform: scale(0.95) !important;
+}
+
+.email-button svg {
+  width: 28px;
+  height: 28px;
+  color: white;
+}
+
+/* Ajustes responsivos */
+@media (max-width: 768px) {
+  .email-button {
+    bottom: 16px !important;
+    right: 16px !important;
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .email-button svg {
+    width: 26px;
+    height: 26px;
+  }
+}

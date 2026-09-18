@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { login } from "../../helper/auth";
 import api from "../../services/api";
 import logo from "../../assets/logo_full.svg";
-import WhatsAppButton from "../../components/WhatsAppButton/WhatsAppButton";
+import EmailButton from "../../components/EmailButton/EmailButton";
 
 const { Title } = Typography;
 
@@ -81,7 +81,7 @@ export default function Login() {
           Não tem conta? <Link to="/register">Criar conta</Link>
         </Form.Item>
       </Form>
-      <WhatsAppButton />
+      <EmailButton />
     </div>
   );
 }
